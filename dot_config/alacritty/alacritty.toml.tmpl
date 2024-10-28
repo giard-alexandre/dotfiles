@@ -6,8 +6,8 @@
 {{ $zellijPathDict := dict "linux" "/usr/bin/zellij" "darwin" (print $macBrewPath "zellij") "windows" "zellij.exe" -}}
 {{- $zellijPath := osClean (get $zellijPathDict .chezmoi.os) -}}
 
+[general]
 live_config_reload = true
-
 import = [
 "~/.config/alacritty/themes/themes/one_dark.toml", # Import Color Theme
 "~/.config/alacritty/alacritty.keybindings.toml", # Import Keybindings
@@ -64,7 +64,7 @@ mods = "None"
 [scrolling]
 history = 10000
 
-[shell]
+[terminal.shell]
 {{- if (not (eq .chezmoi.os "windows")) }}
 program = "{{ $zellijPath }}"
 args = ["options", "--default-shell", "{{ $shellPath }}"]
