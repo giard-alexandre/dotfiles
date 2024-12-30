@@ -67,7 +67,6 @@ history = 10000
 [terminal.shell]
 {{- if (not (eq .chezmoi.os "windows")) }}
 program = "{{ $zellijPath }}"
-args = ["options", "--default-shell", "{{ $shellPath }}"]
 {{ else }}
 program = "{{ $shellPath }}"
 {{ end }}

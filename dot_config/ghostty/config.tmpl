@@ -1,0 +1,17 @@
+{{ $macBrewPath := get (dict "amd64" "/usr/local/bin/" "arm64" "/opt/homebrew/bin/") .chezmoi.arch -}}
+{{ $shellPathDict := dict "linux" "/usr/bin/zsh" "darwin" (print $macBrewPath "zsh") "windows" "pwsh.exe" -}}
+{{- $shellPath := osClean (get $shellPathDict .chezmoi.os) -}}
+
+{{ $zellijPathDict := dict "linux" "/usr/bin/zellij" "darwin" (print $macBrewPath "zellij") "windows" "zellij.exe" -}}
+{{- $zellijPath := osClean (get $zellijPathDict .chezmoi.os) -}}
+
+{{- if (not (eq .chezmoi.os "windows")) }}
+command = "{{ $shellPath }} -l -c {{ $zellijPath }} attach --index 0 || {{ $zellijPath }}"
+{{ else }}
+command = "{{ $shellPath }}"
+{{ end }}
+
+shell-integration = "zsh"
+
+# Imports always imported last.
+config-file = theme.config
