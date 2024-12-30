@@ -8,7 +8,7 @@ PACKAGES=(eza fzf zellij ripgrep bat alacritty git-delta helix k9s)
 ARCH_PACKAGES=(fd)
 DEBIAN_PACKAGES=(fd-find)
 MACOS_TAPS=("FelixKratz/formulae" "koekeishiya/formulae")
-MACOS_PACKAGES=("fd" "koekeishiya/formulae/yabai" "koekeishiya/formulae/skhd" "jordanbaird-ice")
+MACOS_PACKAGES=("fd" "koekeishiya/formulae/yabai" "koekeishiya/formulae/skhd" "jordanbaird-ice" "ghostty")
 
 
 {{ if (eq .chezmoi.os "linux") -}}
@@ -33,11 +33,6 @@ for x in $MACOS_TAPS; do {{ template "brew-executable" . }} tap $x; done
 echo "Successfully tapped brew packages"
 
 {{ template "brew-executable" . }} install $PACKAGES $MACOS_PACKAGES
-
-{{- $validOsForBorders := semverCompare ">= 14.0.0" (output "sw_vers" "--productVersion" | trim) }}
-{{- if $validOsForBorders }}
-#{{ template "brew-executable" . }} install borders
-{{ end }}
 
 echo -e "\0033[0;32m>>>>> Finish Installing Packages <<<<<\033[0m"
 
