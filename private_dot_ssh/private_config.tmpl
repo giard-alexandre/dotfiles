@@ -4,7 +4,9 @@ Host {{ .work_hosts_string }}
 	ServerAliveInterval 60
 	StrictHostKeyChecking no
 	AddKeysToAgent yes
+	{{ if (eq .chezmoi.os "darwin") -}}
 	UseKeychain yes
+	{{ end }}
 	IdentityFile ~/.ssh/ssh_work
 {{- end }}
 
@@ -15,5 +17,7 @@ Host *
 	SetEnv TERM=xterm-256color
 	User git
 	AddKeysToAgent yes
+	{{ if (eq .chezmoi.os "darwin") -}}
 	UseKeychain yes
+	{{- end }}
 	IdentityFile ~/.ssh/ssh_personal
