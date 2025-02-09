@@ -8,7 +8,8 @@ PACKAGES=(eza fzf zellij ripgrep bat alacritty git-delta helix k9s)
 ARCH_PACKAGES=(fd)
 DEBIAN_PACKAGES=(fd-find)
 MACOS_TAPS=("FelixKratz/formulae" "koekeishiya/formulae")
-MACOS_PACKAGES=("fd" "koekeishiya/formulae/yabai" "koekeishiya/formulae/skhd" "jordanbaird-ice" "ghostty")
+MACOS_PACKAGES=("fd" "koekeishiya/formulae/yabai" "koekeishiya/formulae/skhd" "jordanbaird-ice")
+{{ $macosCasks := "ghostty betterdisplay" }}
 
 
 {{ if (eq .chezmoi.os "linux") -}}
@@ -33,6 +34,8 @@ for x in $MACOS_TAPS; do {{ template "brew-executable" . }} tap $x; done
 echo "Successfully tapped brew packages"
 
 {{ template "brew-executable" . }} install $PACKAGES $MACOS_PACKAGES
+
+{{ template "brew-executable" . }} install --cask {{ $macosCasks }}
 
 echo -e "\0033[0;32m>>>>> Finish Installing Packages <<<<<\033[0m"
 
