@@ -1,1 +1,2 @@
-export PATH=$HOME/.dotnet:$PATH
+export DOTNET_ROOT=$HOME/.dotnet
+export PATH=$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools
