@@ -4,9 +4,6 @@ autoload -Uz compinit && compinit
 # Load Dotfile defaults
 . "$HOME/.dotfiles/defaults.zsh"
 
-# Load our paths file.
-source "$DOTFILES/paths.zsh"
-
 # all of our zsh files
 typeset -U config_files
 config_files=($DOTFILES/*/*.zsh)
