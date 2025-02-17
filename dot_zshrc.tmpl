@@ -38,3 +38,19 @@ autoload -U compinit && compinit
 eval "$(starship init zsh)"
 
 unset config_files
+
+# Launch zellij if we're in Ghostty
+# Check if we're in an interactive shell
+if [[ -o interactive ]]; then
+
+    # Check if our Terminal emulator is Ghostty
+	# TODO: revert once released and remove TERM re-definition: https://github.com/ghostty-org/ghostty/pull/5309
+    #if [[ "$GHOSTTY" == "ghostty" ]]; then
+	if [[ "$TERM" == "xterm-ghostty" ]]; then
+        # Launch zellij
+        eval "$(zellij setup --generate-auto-start zsh)"
+    fi
+
+	# TODO: Remove this once above PR is merged and released.
+	export TERM=xterm-256color
+fi
