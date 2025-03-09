@@ -4,11 +4,11 @@ set -eufo pipefail
 
 echo -e "\0033[0;32m>>>>> Begin Installing Packages for Linux/Mac <<<<<\033[0m"
 
-PACKAGES=(eza fzf zellij ripgrep bat alacritty git-delta helix k9s)
-ARCH_PACKAGES=(fd)
-DEBIAN_PACKAGES=(fd-find)
+PACKAGES=(zellij alacritty git-delta helix)
+ARCH_PACKAGES=()
+DEBIAN_PACKAGES=()
 MACOS_TAPS=("FelixKratz/formulae" "koekeishiya/formulae")
-MACOS_PACKAGES=("fd" "koekeishiya/formulae/yabai" "koekeishiya/formulae/skhd" "jordanbaird-ice")
+MACOS_PACKAGES=("koekeishiya/formulae/yabai" "koekeishiya/formulae/skhd" "jordanbaird-ice")
 {{ $macosCasks := "ghostty betterdisplay" }}
 
 
