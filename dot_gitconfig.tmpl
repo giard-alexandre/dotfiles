@@ -27,24 +27,6 @@
 	commend = commit --amend --no-edit
 	fpr = fetch-pr
 	lt = log --tags --decorate --simplify-by-decoration --oneline
-[color]
-    diff = auto
-    status = auto
-    branch = auto
-    ui = true
-[color "diff-highlight"]
-    oldNormal = red bold
-    oldHighlight = red bold 52
-    newNormal = green bold
-    newHighlight = green bold 22
-[color "diff"]
-    meta = 11
-    frag = magenta bold
-    func = 146 bold
-    commit = yellow bold
-    old = red bold
-    new = green bold
-    whitespace = red reverse
 [core]
 	excludesfile = ~/.gitignore
 	editor = vim
@@ -53,40 +35,68 @@
 	whitespace = trailing-space,space-before-tab
 	precomposeunicode = true
 	pager = delta
+	# Use a cache and monitoring process for each repo instead of
+	# crawling all files for every operation.
+	fsmonitor = true
+    untrackedCache = true
+[column]
+	ui = auto
+[branch]
+	sort = -committerdate
+[tag]
+	sort = version:refname
+[init]
+	defaultBranch = main
+[fetch]
+	prune = true
+	pruneTags = true
+	all = true
+[rerere]
+	enabled = true
+	autoupdate = true
+[rebase]
+	autoSquash = true
+	autoStash = true
+	updateRefs = true
+[pull]
+	rebase = true
+[push]
+	default = simple
+	autoSetupRemote = true
+	followTags = true
 [apply]
 	whitespace = nowarn
 [help]
-	autocorrect = 1
+	autocorrect = prompt
 [merge]
 	tool = diffmerge
-	conflictstyle = diff3
+	conflictstyle = zdiff3
 [mergetool "diffmerge"]
 	cmd = diffmerge --merge --result=$MERGED $LOCAL $BASE $REMOTE
 	trustExitCode = true
 	keepBackup = false
 [diff]
 	tool = diffmerge
-	colorMoved = default
+	colorMoved = plain
+	algorithm = histogram
+	mnemonicPrefix = true
+	renames = true
 [difftool]
 	prompt = false
 [grep]
 	extendRegexp = true
 	lineNumber = true
-[push]
-	default = simple
 [submodule]
 	fetchJobs = 4
 [commit]
+	verbose = true
 	template = ~/.dotfiles/git/template.txt
 [log]
 	showSignature = false
 [delta]
     navigate = true    # use n and N to move between diff sections
-    light = false      # set to true if you're in a terminal w/ a light background color (e.g. the default macOS terminal)
+    #light = false      # set to true if you're in a terminal w/ a light background color (e.g. the default macOS terminal)
 	line-numbers = true
 	side-by-side = false
 	hyperlinks = true
 	hyperlinks-file-link-format = "file-line://{path}:{line}"
-[rerere]
-    enabled = true
-    autoupdate = true
