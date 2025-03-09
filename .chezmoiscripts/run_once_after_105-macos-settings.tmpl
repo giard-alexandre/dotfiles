@@ -1,0 +1,35 @@
+{{ if (eq .chezmoi.os "darwin") -}}
+#!/bin/bash
+set -eufo pipefail
+
+echo -e "\0033[0;32m>>>>> Setting MacOS Defaults <<<<<\033[0m"
+
+echo -e "\0033[0;32m>> Auto-hide Dock <<\033[0m"
+defaults write com.apple.dock autohide -bool true
+
+echo -e "\0033[0;32m>> Shorter dock show/hide delay <<\033[0m"
+defaults write com.apple.dock autohide-delay -float 0.05
+
+echo -e "\0033[0;32m>> Faster dock show/hide Animation <<\033[0m"
+defaults write com.apple.dock autohide-time-modifier -float 0.15
+
+echo -e "\0033[0;32m>> Disable accent keys on press and hold <<\033[0m"
+defaults write -g ApplePressAndHoldEnabled -bool false
+
+echo -e "\0033[0;32m>> F keys as F-keys instead of Media <<\033[0m"
+defaults write -g com.apple.keyboard.fnState -bool true
+
+echo -e "\0033[0;32m>>>>> Restart Dock <<<<<\033[0m"
+killall Dock
+
+echo -e "\0033[0;32m>>>>> Finish Setting MacOS Defaults <<<<<\033[0m"
+
+echo -e "\0033[0;32m>>>>> Start MacOS Services <<<<<\033[0m"
+
+skhd --start-service
+
+echo -e "\0033[0;32m>>>>> Finish Starting MacOS Services <<<<<\033[0m"
+
+echo -e "\0033[0;32m>>>>> !!!Consider restarting your Mac to apply any new settings!!! <<<<<\033[0m"
+{{ end }}
+
