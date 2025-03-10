@@ -2,7 +2,7 @@
 	email = {{ .personal_email | quote }}
 	name = {{ .full_name | quote }}
 {{ if .has_work_profile -}}
-[includeIf "gitdir:{{ .work_project_folder }}"]
+[includeIf "gitdir:{{ .work_project_folder }}/"]
     path = .gitconfig.work
 {{- end }}
 [credential]
