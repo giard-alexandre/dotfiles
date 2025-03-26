@@ -5,9 +5,7 @@
 {{ $miseOsArch := (get $miseOsArchDict .chezmoi.arch) }}
 
 {{- $nerdFontsLatest := (gitHubLatestRelease "ryanoasis/nerd-fonts").TagName -}}
-
-{{ $fontPathDict := dict "linux" ".fonts" "darwin" "Library/Fonts" "windows" "AppData/Local/Microsoft/Windows/Fonts" }}
-{{ $fontDir := osClean (get $fontPathDict .chezmoi.os) }}
+{{- $monaspaceLatest := (gitHubLatestRelease "githubnext/monaspace").TagName -}}
 
 ####################### Mise #######################
 [".local/bin/mise"]
@@ -104,37 +102,37 @@
 ####################### /Oh-My-Zsh #######################
 
 ####################### Fonts #######################
-["{{ $fontDir }}/JetBrainsMono"]
+["{{ .font_dir }}/JetBrainsMono"]
 	type = "archive"
 	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ $nerdFontsLatest }}/JetBrainsMono.zip"
 	exact = true
 	refreshPeriod = "168h"
 
-["{{ $fontDir }}/Inconsolata"]
+["{{ .font_dir }}/Inconsolata"]
 	type = "archive"
 	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ $nerdFontsLatest }}/Inconsolata.zip"
 	exact = true
 	refreshPeriod = "168h"
 
-["{{ $fontDir }}/Hack"]
+["{{ .font_dir }}/Hack"]
 	type = "archive"
 	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ $nerdFontsLatest }}/Hack.zip"
 	exact = true
 	refreshPeriod = "168h"
 
-["{{ $fontDir }}/FiraCode"]
+["{{ .font_dir }}/FiraCode"]
 	type = "archive"
 	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ $nerdFontsLatest }}/FiraCode.zip"
 	exact = true
 	refreshPeriod = "168h"
 
-["{{ $fontDir }}/CascadiaCode"]
+["{{ .font_dir }}/CascadiaCode"]
 	type = "archive"
 	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ $nerdFontsLatest }}/CascadiaCode.zip"
 	exact = true
 	refreshPeriod = "168h"
 
-["{{ $fontDir }}/Meslo"]
+["{{ .font_dir }}/Meslo"]
 	type = "archive"
 	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ $nerdFontsLatest }}/Meslo.zip"
 	exact = true
