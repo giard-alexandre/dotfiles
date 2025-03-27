@@ -161,3 +161,24 @@
     [".local/bin/sad".filter]
         command = "funzip"
 ####################### /Install Sad #######################
+
+####################### Install Dra #######################
+{{- $draLatestGlob := (printf "dra-%s-%s-%s" .dra_latest .rust_arch .rust_os) -}}
+{{- $draLatestGlobTar := (printf "%s.tar.gz" $draLatestGlob) -}}
+{{ $draLatestAsset := (gitHubLatestReleaseAssetURL "devmatteini/dra" $draLatestGlobTar) }}
+[".local/bin/dra"]
+    type = "archive-file"
+    url = {{ $draLatestAsset | quote }}
+    executable = true
+    path = {{ printf "%s/%s" $draLatestGlob "dra" | quote }}
+####################### /Install Dra ######################
+
+
+####################### Install age #######################
+{{ $ageLatestAsset := (gitHubLatestReleaseAssetURL "FiloSottile/age" (printf "age-*-%s-%s.tar.gz" .chezmoi.os .chezmoi.arch)) }}
+[".local/bin/age"]
+    type = "archive-file"
+    url = {{ $ageLatestAsset | quote }}
+    executable = true
+    path = "age/age"
+####################### /Install age ######################
