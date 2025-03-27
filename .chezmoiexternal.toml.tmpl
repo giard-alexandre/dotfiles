@@ -153,13 +153,9 @@
 ####################### /Docker Completions #######################
 
 ####################### Install Sad #######################
-{{ $chezmoiArch := (eq .chezmoi.arch "amd64") | ternary "x86_64" "aarch64" -}}
-{{ $sadOsDict := dict "linux" "unknown-linux-gnu" "darwin" "apple-darwin" "windows" "pc-windows-msvc" -}}
-{{ $sadOs := get $sadOsDict .chezmoi.os -}}
-
 [".local/bin/sad"]
     type = "file"
-    url = "https://github.com/ms-jpq/sad/releases/latest/download/{{ $chezmoiArch }}-{{ $sadOs }}.zip"
+    url = "https://github.com/ms-jpq/sad/releases/latest/download/{{ .rust_arch }}-{{ .rust_os }}.zip"
     executable = true
     refreshPeriod = "168h"
     [".local/bin/sad".filter]
