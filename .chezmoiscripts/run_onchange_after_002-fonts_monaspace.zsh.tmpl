@@ -1,0 +1,32 @@
+{{- if ne .chezmoi.os "windows" -}}
+#!/bin/zsh
+{{ $monaspaceLatest := (gitHubLatestRelease "githubnext/monaspace").TagName -}}
+############################# Monaspace {{ $monaspaceLatest }} #############################
+echo -e "\0033[0;32m>>>>> Installing Monaspace {{ $monaspaceLatest }} <<<<<\033[0m"
+{{ $repo := .fonts.monaspace.repo -}}
+{{ $extension := .fonts.monaspace.extension -}}
+
+{{ $fontDir := printf "%s/%s/" .font_dir "Monaspace" -}}
+# Clear the directory (if this is an update)
+rm -rf {{ $fontDir | quote }}
+
+# create font directory if it does not exist
+mkdir -p {{ $fontDir | quote }}
+
+# download to /tmp dir
+dra download --select monaspace-{{$monaspaceLatest}}{{$extension}} --output "/tmp/" {{ $repo }}
+
+# Extract file
+tar xf "/tmp/monaspace-{{$monaspaceLatest}}{{$extension}}" -C "/tmp"
+
+{{ range .fonts.monaspace.fontNames -}}
+####### Install {{ . }} #######
+echo "== installing {{ . }} =="
+# mv folder to fontsdir/Monaspace?
+mv "/tmp/monaspace-{{$monaspaceLatest}}/fonts/{{ . }}" "{{ $fontDir }}{{ . }}"
+
+####### /Install {{ . }} ######
+{{ end -}}
+echo -e "\0033[0;32m>>>>> Finished Installing Monaspace {{ $monaspaceLatest }} <<<<<\033[0m"
+############################# /Monaspace ############################
+{{- end }}

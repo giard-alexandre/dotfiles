@@ -10,7 +10,9 @@ fonts:
             - CascadiaCode
             - Meslo
     monaspace:
-        repo: ""
+        repo: "githubnext/monaspace"
         extension: .zip
         fontNames:
-            - something
+            - frozen
+            - otf
+            - variable
