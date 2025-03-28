@@ -3,6 +3,9 @@
 {{- $personalProjectFolder := promptStringOnce . "personalProjectFolder" "Personal Projects Folder (relative to home) (`c` will cd you there)" -}}
 {{- $hasWorkProfile := promptBoolOnce . "hasWorkProfile" "Does this machine have a work profile? Is this a work machine?" -}}
 
+{{- $fontPathDict := dict "linux" ".fonts" "darwin" "Library/Fonts" "windows" "AppData/Local/Microsoft/Windows/Fonts" -}}
+{{- $rustOsDict := dict "linux" "unknown-linux-gnu" "darwin" "apple-darwin" "windows" "pc-windows-msvc" -}}
+
 [data]
     full_name = {{ $fullName | quote }}
     personal_email = {{ $personalEmail | quote }}
@@ -12,8 +15,15 @@
 {{- $workEmail := promptStringOnce . "workEmail" "Work Email address" -}}
 {{- $workProjectFolder := promptStringOnce . "workProjectFolder" "Work Projects Folder (relative to home) (`cw` will cd you there)" }}
 {{- $workHostString := promptStringOnce . "workHostString" `Space-separated list of Domain patterns to use for work. Used to link the right ssh key
-when accessing work projects/machines. (mainly used for git)` -}}
+	when accessing work projects/machines. (mainly used for git)` }}
+    # Work profile settings
     work_email = {{ $workEmail | quote }}
     work_project_folder = {{ osClean (printf "%q" (print .chezmoi.homeDir "/" $workProjectFolder)) }}
     work_hosts_string = {{ $workHostString | quote }}
-{{     end -}}
+    # End Work profile settings
+{{ end }}
+    font_dir = {{ osClean (get $fontPathDict .chezmoi.os) | quote }}
+    rust_arch = {{ (eq .chezmoi.arch "amd64") | ternary "x86_64" "aarch64" | quote }}
+    rust_os = {{ get $rustOsDict .chezmoi.os | quote }}
+    dra_latest = "{{ (gitHubLatestRelease "devmatteini/dra").TagName }}"
+

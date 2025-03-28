@@ -4,11 +4,6 @@
 {{ $miseOsArchDict := dict "amd64" "x64" "arm64" "arm64" }}
 {{ $miseOsArch := (get $miseOsArchDict .chezmoi.arch) }}
 
-{{- $nerdFontsLatest := (gitHubLatestRelease "ryanoasis/nerd-fonts").TagName -}}
-
-{{ $fontPathDict := dict "linux" ".fonts" "darwin" "Library/Fonts" "windows" "AppData/Local/Microsoft/Windows/Fonts" }}
-{{ $fontDir := osClean (get $fontPathDict .chezmoi.os) }}
-
 ####################### Mise #######################
 [".local/bin/mise"]
     type = "archive-file"
@@ -103,45 +98,6 @@
 	refreshPeriod = "168h"
 ####################### /Oh-My-Zsh #######################
 
-####################### Fonts #######################
-["{{ $fontDir }}/JetBrainsMono"]
-	type = "archive"
-	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ $nerdFontsLatest }}/JetBrainsMono.zip"
-	exact = true
-	refreshPeriod = "168h"
-
-["{{ $fontDir }}/Inconsolata"]
-	type = "archive"
-	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ $nerdFontsLatest }}/Inconsolata.zip"
-	exact = true
-	refreshPeriod = "168h"
-
-["{{ $fontDir }}/Hack"]
-	type = "archive"
-	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ $nerdFontsLatest }}/Hack.zip"
-	exact = true
-	refreshPeriod = "168h"
-
-["{{ $fontDir }}/FiraCode"]
-	type = "archive"
-	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ $nerdFontsLatest }}/FiraCode.zip"
-	exact = true
-	refreshPeriod = "168h"
-
-["{{ $fontDir }}/CascadiaCode"]
-	type = "archive"
-	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ $nerdFontsLatest }}/CascadiaCode.zip"
-	exact = true
-	refreshPeriod = "168h"
-
-["{{ $fontDir }}/Meslo"]
-	type = "archive"
-	url = "https://github.com/ryanoasis/nerd-fonts/releases/download/{{ $nerdFontsLatest }}/Meslo.zip"
-	exact = true
-	refreshPeriod = "168h"
-
-####################### /Fonts #######################
-
 ####################### Docker Completions #######################
 [".docker/completions/_docker"]
 	type = "file"
@@ -155,15 +111,32 @@
 ####################### /Docker Completions #######################
 
 ####################### Install Sad #######################
-{{ $chezmoiArch := (eq .chezmoi.arch "amd64") | ternary "x86_64" "aarch64" -}}
-{{ $sadOsDict := dict "linux" "unknown-linux-gnu" "darwin" "apple-darwin" "windows" "pc-windows-msvc" -}}
-{{ $sadOs := get $sadOsDict .chezmoi.os -}}
-
 [".local/bin/sad"]
     type = "file"
-    url = "https://github.com/ms-jpq/sad/releases/latest/download/{{ $chezmoiArch }}-{{ $sadOs }}.zip"
+    url = "https://github.com/ms-jpq/sad/releases/latest/download/{{ .rust_arch }}-{{ .rust_os }}.zip"
     executable = true
     refreshPeriod = "168h"
     [".local/bin/sad".filter]
         command = "funzip"
 ####################### /Install Sad #######################
+
+####################### Install Dra #######################
+{{- $draLatestGlob := (printf "dra-%s-%s-%s" .dra_latest .rust_arch .rust_os) -}}
+{{- $draLatestGlobTar := (printf "%s.tar.gz" $draLatestGlob) -}}
+{{ $draLatestAsset := (gitHubLatestReleaseAssetURL "devmatteini/dra" $draLatestGlobTar) }}
+[".local/bin/dra"]
+    type = "archive-file"
+    url = {{ $draLatestAsset | quote }}
+    executable = true
+    path = {{ printf "%s/%s" $draLatestGlob "dra" | quote }}
+####################### /Install Dra ######################
+
+
+####################### Install age #######################
+{{ $ageLatestAsset := (gitHubLatestReleaseAssetURL "FiloSottile/age" (printf "age-*-%s-%s.tar.gz" .chezmoi.os .chezmoi.arch)) }}
+[".local/bin/age"]
+    type = "archive-file"
+    url = {{ $ageLatestAsset | quote }}
+    executable = true
+    path = "age/age"
+####################### /Install age ######################

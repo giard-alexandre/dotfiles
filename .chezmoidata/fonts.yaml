@@ -1,0 +1,18 @@
+fonts:
+    nerdfonts:
+        repo: ryanoasis/nerd-fonts
+        extension: .tar.xz
+        fontNames:
+            - JetBrainsMono
+            - Inconsolata
+            - Hack
+            - FiraCode
+            - CascadiaCode
+            - Meslo
+    monaspace:
+        repo: "githubnext/monaspace"
+        extension: .zip
+        fontNames:
+            - frozen
+            - otf
+            - variable

@@ -1,0 +1,29 @@
+{{- if ne .chezmoi.os "windows" -}}
+#!/bin/zsh
+{{ $rootFonts := .font_dir }}
+{{- $nerdFontsLatest := (gitHubLatestRelease "ryanoasis/nerd-fonts").TagName -}}
+############################# Nerd Fonts {{ $nerdFontsLatest }} #############################
+echo -e "\0033[0;32m>>>>> Installing Nerd Fonts {{ $nerdFontsLatest }} <<<<<\033[0m"
+{{ $repo := .fonts.nerdfonts.repo -}}
+{{ $extension := .fonts.nerdfonts.extension -}}
+{{ range .fonts.nerdfonts.fontNames -}}
+####### Install {{ . }} #######
+echo "== installing {{ . }} =="
+{{ $fontDir := printf "%s/%s/" $rootFonts . -}}
+{{ $fontPkg := printf "%s%s" . $extension -}}
+# Clear the directory (if this is an update)
+rm -rf {{ $fontDir | quote }}
+
+# create font directory if it does not exist
+mkdir -p {{ $fontDir | quote }}
+
+# download to /tmp dir
+dra download --select {{ $fontPkg | quote }} --output "/tmp/{{ $fontPkg }}" {{ $repo }}
+
+# Extract file
+tar xf "/tmp/{{ $fontPkg }}" -C {{ $fontDir | quote }}
+####### /Install {{ . }} ######
+{{ end -}}
+echo -e "\0033[0;32m>>>>> Finished Installing Nerd Fonts {{ $nerdFontsLatest }} <<<<<\033[0m"
+############################# /Nerd Fonts ############################
+{{- end }}
