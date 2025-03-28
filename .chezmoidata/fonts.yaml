@@ -3,8 +3,12 @@ fonts:
         repo: ryanoasis/nerd-fonts
         extension: .tar.xz
         fontNames:
-#            - JetBrainsMono
+            - JetBrainsMono
             - Inconsolata
+            - Hack
+            - FiraCode
+            - CascadiaCode
+            - Meslo
     monaspace:
         repo: ""
         extension: .zip

@@ -4,7 +4,6 @@
 {{ $miseOsArchDict := dict "amd64" "x64" "arm64" "arm64" }}
 {{ $miseOsArch := (get $miseOsArchDict .chezmoi.arch) }}
 
-{{- $nerdFontsLatest := (gitHubLatestRelease "ryanoasis/nerd-fonts").TagName -}}
 {{- $monaspaceLatest := (gitHubLatestRelease "githubnext/monaspace").TagName -}}
 
 ####################### Mise #######################
