@@ -10,6 +10,8 @@ In order to avoid any issues with rate limiting on the GH API, I recommend addin
 - `GITHUB_ACCESS_TOKEN`
 - `GITHUB_TOKEN`
 
+> Note: I recommend using GITHUB_TOKEN as this is most compatible with other tools.
+
 
 ## Install chezmoi on your machine using the shell script.
 > We're installing it to the `~/.local/bin` directory to accomodate as many Unix-style OSs as possible.

@@ -1,0 +1,12 @@
+fonts:
+    nerdfonts:
+        repo: ryanoasis/nerd-fonts
+        extension: .tar.xz
+        fontNames:
+#            - JetBrainsMono
+            - Inconsolata
+    monaspace:
+        repo: ""
+        extension: .zip
+        fontNames:
+            - something
