@@ -21,7 +21,7 @@ mkdir -p {{ $fontDir | quote }}
 dra download --select {{ $fontPkg | quote }} --output "/tmp/{{ $fontPkg }}" {{ $repo }}
 
 # Extract file
-tar xf  "/tmp/{{ $fontPkg }}" -C {{ $fontDir | quote }}
+tar xf "/tmp/{{ $fontPkg }}" -C {{ $fontDir | quote }}
 ####### /Install {{ . }} ######
 {{ end -}}
 echo -e "\0033[0;32m>>>>> Finished Installing Nerd Fonts {{ $nerdFontsLatest }} <<<<<\033[0m"
