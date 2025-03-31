@@ -1,0 +1,49 @@
+packages:
+    darwin:
+        brews:
+            # Shared
+            - 'git'
+            - 'curl'
+            - 'zellij'
+            - 'git-delta'
+            - 'nushell'
+            # /Shared
+            - 'unzip'
+            - 'koekeishiya/formulae/yabai'
+            - 'koekeishiya/formulae/skhd'
+        casks:
+            - 'alacritty'
+            - 'betterdisplay'
+            - 'ghostty'
+            - 'jordanbaird-ice'
+        taps:
+            - 'koekeishiya/formulae' # yabai, skhd
+            - 'FelixKratz/formulae' # sketchybar, borders
+    linux:
+        apt:
+            packages:
+                - 'git'
+                - 'curl'
+                - 'zellij'
+                - 'git-delta'
+                - 'tar'
+                - 'unzip'
+                - 'helix'
+            repositories:
+        pacman:
+            packages:
+                - 'git'
+                - 'curl'
+                - 'zellij'
+                - 'git-delta'
+                - 'tar'
+                - 'unzip'
+                - 'helix'
+                - 'ghostty'
+            repositories:
+    windows:
+        winget:
+            - 'fzf'
+            - 'sharkdp.bat'
+            - 'alacritty'
+#        chocolatey: # Maybe?

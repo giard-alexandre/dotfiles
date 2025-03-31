@@ -1,0 +1,10 @@
+{{ if and (eq .chezmoi.os "linux") (eq .chezmoi.osRelease.id "arch") -}}
+#!/bin/bash
+
+echo -e "\0033[0;32m>>>>> Begin installing Packages for Linux Pacman <<<<<\033[0m"
+
+{{ template "run-as-root" dict "chezmoi" .chezmoi "command" "pacman -S --noconfirm \\" -}}
+{{- range .packages.linux.pacman.packages -}}{{- . | quote }} {{ end }};
+
+echo -e "\0033[0;32m>>>>> End installing Packages for Linux Pacman <<<<<\033[0m"
+{{- end }}
