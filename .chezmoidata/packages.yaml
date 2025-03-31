@@ -1,10 +1,4 @@
 packages:
-    common:
-        packages:
-            - 'zellij'
-            - 'alacritty'
-            - 'git-delta'
-            - 'helix'
     darwin:
         brews:
             # Shared
@@ -25,3 +19,26 @@ packages:
         taps:
             - 'koekeishiya/formulae' # yabai, skhd
             - 'FelixKratz/formulae' # sketchybar, borders
+    linux:
+        apt:
+            packages:
+                - 'git'
+                - 'curl'
+                - 'zellij'
+                - 'git-delta'
+            repositories:
+        pacman:
+            packages:
+                - 'git'
+                - 'curl'
+                - 'zellij'
+                - 'git-delta'
+                - 'ghostty'
+                - 'helix'
+            repositories:
+    windows:
+        winget:
+            - 'fzf'
+            - 'sharkdp.bat'
+            - 'alacritty'
+#        chocolatey: # Maybe?
