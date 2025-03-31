@@ -1,0 +1,27 @@
+packages:
+    common:
+        packages:
+            - 'zellij'
+            - 'alacritty'
+            - 'git-delta'
+            - 'helix'
+    darwin:
+        brews:
+            # Shared
+            - 'git'
+            - 'curl'
+            - 'zellij'
+            - 'git-delta'
+            - 'nushell'
+            # /Shared
+            - 'unzip'
+            - 'koekeishiya/formulae/yabai'
+            - 'koekeishiya/formulae/skhd'
+        casks:
+            - 'alacritty'
+            - 'betterdisplay'
+            - 'ghostty'
+            - 'jordanbaird-ice'
+        taps:
+            - 'koekeishiya/formulae' # yabai, skhd
+            - 'FelixKratz/formulae' # sketchybar, borders
