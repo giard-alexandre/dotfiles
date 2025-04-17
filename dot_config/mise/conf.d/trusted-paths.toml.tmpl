@@ -1,0 +1,6 @@
+# config files with these prefixes will be trusted by default
+[settings]
+trusted_config_paths = [
+	{{ osClean .personal_project_folder | quote }},
+	{{ if not (empty (get . "work_project_folder")) }}{{ osClean .work_project_folder | quote }},{{ end }}
+]
