@@ -15,7 +15,7 @@ for file in ${${config_files:#*/path.zsh}:#*/completion.zsh}; do
 done
 
 # load plugins
-#. "$DOTFILES/oh-my-zsh/plugins.zsh"
+source "$DOTFILES/oh-my-zsh/plugins.zsh"
 
 # Load our completions file.
 source "$DOTFILES/completions.zsh"
