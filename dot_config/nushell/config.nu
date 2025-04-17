@@ -24,6 +24,8 @@ $env.config.plugins = {}
 alias ll = ls -l
 alias lla = ls -la
 
+# TODO: Theme, completions, aliases, nu_scripts?
+
 
 # TODO:
 # completer (closure with a |spans| parameter): A command to call for *argument* completions
