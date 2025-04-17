@@ -1,0 +1,28 @@
+[tools]
+# global tool versions go here
+# Tools
+neovim = 'latest'
+bat = 'latest'
+dprint = 'latest'
+eza = 'latest'
+fd = 'latest'
+fzf = 'latest'
+fx = 'latest'
+gojq = 'latest'
+jqp = 'latest'
+ripgrep = 'latest'
+
+# Languages
+node = 'latest'
+go = 'latest'
+go-jsonnet = 'latest'
+jsonnet-bundler = 'latest'
+python = ['latest', '2']
+
+# Kubernetes
+kubectl = 'latest'
+k9s = 'latest'
+kubie = 'latest'
+krew = 'latest'
+helm = 'latest'
+tanka = 'latest'
