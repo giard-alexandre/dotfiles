@@ -8,7 +8,6 @@ $env.config.history = {
 }
 
 $env.config.completions.algorithm = "prefix"
-$env.config.completions.positional = false
 $env.config.completions.sort = "smart"
 
 $env.config.footer_mode = "auto"
