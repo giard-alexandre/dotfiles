@@ -5,7 +5,6 @@ set -eufo pipefail
 echo -e "\0033[0;32m>>>>> Set Zsh as default Shell <<<<<\033[0m"
 
 # Get the path to zsh
-# TODO: Check for shell path using mise?
 {{- if findOneExecutable (list "zsh") (list "/usr/local/bin" "bin" "local/bin" ".local/bin") }}
 ZSH_PATH={{- findOneExecutable (list "zsh") (list "/usr/local/bin" "local/bin" ".local/bin" "bin" "/bin") | quote }}
 {{ else }}
