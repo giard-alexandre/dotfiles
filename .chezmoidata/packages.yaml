@@ -2,10 +2,12 @@ packages:
     darwin:
         brews:
             # Shared
+            - 'zsh'
             - 'git'
             - 'curl'
             - 'zellij'
             - 'git-delta'
+            - 'starship'
             - 'nushell'
             # /Shared
             - 'unzip'
@@ -22,8 +24,10 @@ packages:
     linux:
         apt:
             packages:
+                - 'zsh'
                 - 'git'
                 - 'curl'
+                - 'starship'
                 - 'zellij'
                 - 'git-delta'
                 - 'tar'
@@ -32,8 +36,10 @@ packages:
             repositories:
         pacman:
             packages:
+                - 'zsh'
                 - 'git'
                 - 'curl'
+                - 'starship'
                 - 'zellij'
                 - 'git-delta'
                 - 'tar'
@@ -43,6 +49,7 @@ packages:
             repositories:
     windows:
         winget:
+            - 'Starship.Starship'
             - 'fzf'
             - 'sharkdp.bat'
             - 'alacritty'

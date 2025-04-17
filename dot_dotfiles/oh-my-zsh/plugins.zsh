@@ -4,6 +4,9 @@
 zstyle ':omz:update' mode disabled
 zstyle :omz:plugins:iterm2 shell-integration yes
 
+DISABLE_AUTO_UPDATE=true
+DISABLE_MAGIC_FUNCTIONS=true
+ZSH_AUTOSUGGEST_MANUAL_REBIND=1
 ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=100
 
 ZSH_HIGHLIGHT_HIGHLIGHTERS=( main brackets root )

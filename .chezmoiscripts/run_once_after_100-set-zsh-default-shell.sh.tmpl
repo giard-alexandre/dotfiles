@@ -1,0 +1,35 @@
+{{ if (or (eq .chezmoi.os "linux") (eq .chezmoi.os "darwin")) -}}
+#!/bin/bash
+set -eufo pipefail
+
+echo -e "\0033[0;32m>>>>> Set Zsh as default Shell <<<<<\033[0m"
+
+# Get the path to zsh
+{{- if findOneExecutable (list "zsh") (list "/usr/local/bin" "bin" "local/bin" ".local/bin") }}
+ZSH_PATH={{- findOneExecutable (list "zsh") (list "/usr/local/bin" "local/bin" ".local/bin" "bin" "/bin") | quote }}
+{{ else }}
+ZSH_PATH=$(which zsh)
+{{ end }}
+
+# Set zsh as default shell
+if [ $SHELL != $ZSH_PATH ]; then
+  echo "Changing default shell to zsh"
+
+  # Create file if not exist
+  [ -f /etc/shells ] || touch /etc/shells
+
+  if ! grep -q "^$ZSH_PATH$" /etc/shells; then
+      echo "Adding $ZSH_PATH to /etc/shells"
+      echo $ZSH_PATH >> /etc/shells
+  fi
+
+{{  if ne .chezmoi.username "root" -}}
+    sudo chsh -s $ZSH_PATH
+{{  else -}}
+    chsh -s $ZSH_PATH
+{{  end }}
+fi
+
+echo -e "\0033[0;32m>>>>> Finish Setting Up zsh as default shell <<<<<\033[0m"
+
+{{ end -}}
