@@ -1,1 +1,5 @@
-# Default global config file.
+# Default global config file that gets changed when running things like:
+# mise use -g java@24
+# For that reason, we only create this file instead of fully managing it with chezmoi
+# as updates were causing diffs every time we needed to run `chezmoi apply`
+# Default files for mise are now all under `conf.d` and imported automatically.
