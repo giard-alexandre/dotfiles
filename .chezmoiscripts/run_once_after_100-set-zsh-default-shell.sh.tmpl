@@ -15,17 +15,23 @@ ZSH_PATH=$(which zsh)
 if [ $SHELL != $ZSH_PATH ]; then
   echo "Changing default shell to zsh"
 
-  # Create file if not exist
-  [ -f /etc/shells ] || touch /etc/shells
-
-  if ! grep -q "^$ZSH_PATH$" /etc/shells; then
-      echo "Adding $ZSH_PATH to /etc/shells"
-      echo $ZSH_PATH >> /etc/shells
-  fi
-
 {{  if ne .chezmoi.username "root" -}}
-    sudo chsh -s $ZSH_PATH
+    # Create file if not exist
+      [ -f /etc/shells ] || sudo touch /etc/shells
+
+      if ! grep -q "^$ZSH_PATH$" /etc/shells; then
+          echo "Adding $ZSH_PATH to /etc/shells"
+          echo $ZSH_PATH | sudo tee -a /etc/shells > /dev/null
+      fi
+    chsh -s $ZSH_PATH
 {{  else -}}
+    # Create file if not exist
+      [ -f /etc/shells ] || touch /etc/shells
+
+      if ! grep -q "^$ZSH_PATH$" /etc/shells; then
+          echo "Adding $ZSH_PATH to /etc/shells"
+          echo $ZSH_PATH >> /etc/shells
+      fi
     chsh -s $ZSH_PATH
 {{  end }}
 fi
