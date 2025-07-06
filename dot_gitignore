@@ -14,3 +14,9 @@
 .vscode/
 dump.rdb
 main.tfvars
+dist
+
+# dotnet projects
+obj/
+bin/
+

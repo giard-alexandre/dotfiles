@@ -1,12 +1,29 @@
-# editorconfig.org
+root=true
+
 [*]
-indent_style = tab
+indent_style = space
 indent_size = 4
 end_of_line = lf
 charset = utf-8
 trim_trailing_whitespace = true
 insert_final_newline = true
 
-[{*.md,*.yml}]
-indent_style = space
-indent_size = 2
+[*.{go,rs,zig,fish}]
+indent_size=4
+indent_style=tab
+
+[*.cs]
+# New line preferences
+tab_width = 4
+end_of_line = crlf
+
+# Shell scripts
+[*.sh]
+end_of_line = lf
+
+[*.{cmd, bat}]
+end_of_line = crlf
+
+[Makefile]
+indent_size=4
+indent_style=tab

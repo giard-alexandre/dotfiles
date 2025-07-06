@@ -4,14 +4,14 @@
 echo -e "\0033[0;32m>>>>> Begin installing Packages for Darwin <<<<<\033[0m"
 
 {{ template "brew-executable" . }} bundle --file=/dev/stdin <<EOF
+{{ range .packages.darwin.taps -}}
+tap {{ . | quote }}
+{{ end -}}
 {{ range .packages.darwin.brews -}}
 brew {{ . | quote }}
 {{ end -}}
 {{ range .packages.darwin.casks -}}
 cask {{ . | quote }}
-{{ end -}}
-{{ range .packages.darwin.taps -}}
-tap {{ . | quote }}
 {{ end -}}
 EOF
 {{- end }}

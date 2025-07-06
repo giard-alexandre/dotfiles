@@ -17,7 +17,7 @@ node = 'latest'
 go = 'latest'
 go-jsonnet = 'latest'
 jsonnet-bundler = 'latest'
-python = ['latest', '2']
+python = 'latest'
 
 # Kubernetes
 kubectl = 'latest'
