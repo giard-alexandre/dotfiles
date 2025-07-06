@@ -20,7 +20,7 @@ packages:
             - 'jordanbaird-ice'
         taps:
             - 'koekeishiya/formulae' # yabai, skhd
-            - 'FelixKratz/formulae' # sketchybar, borders
+            - 'felixkratz/formulae' # sketchybar, borders
     linux:
         apt:
             packages:
