@@ -25,5 +25,4 @@
     font_dir = {{ osClean (get $fontPathDict .chezmoi.os) | quote }}
     rust_arch = {{ (eq .chezmoi.arch "amd64") | ternary "x86_64" "aarch64" | quote }}
     rust_os = {{ get $rustOsDict .chezmoi.os | quote }}
-    dra_latest = "{{ (gitHubLatestRelease "devmatteini/dra").TagName }}"
 
