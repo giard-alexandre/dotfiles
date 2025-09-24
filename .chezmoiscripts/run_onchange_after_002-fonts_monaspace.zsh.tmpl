@@ -10,23 +10,31 @@ echo -e "\0033[0;32m>>>>> Installing Monaspace {{ $monaspaceLatest }} <<<<<\033[
 # Clear the directory (if this is an update)
 rm -rf {{ $fontDir | quote }}
 
+# Clear the tmp dir
+rm -rf "/tmp/Monaspace"
+
 # create font directory if it does not exist
 mkdir -p {{ $fontDir | quote }}
 
-# download to /tmp dir
-dra download --select monaspace-{{$monaspaceLatest}}{{$extension}} --output "/tmp/" {{ $repo }}
-
-# Extract file
-tar xf "/tmp/monaspace-{{$monaspaceLatest}}{{$extension}}" -C "/tmp"
+# create font directory in tmp if it does not exist
+mkdir -p "/tmp/Monaspace"
 
 {{ range .fonts.monaspace.fontNames -}}
-####### Install {{ . }} #######
-echo "== installing {{ . }} =="
-# mv folder to fontsdir/Monaspace?
-mv "/tmp/monaspace-{{$monaspaceLatest}}/fonts/{{ . }}" "{{ $fontDir }}{{ . }}"
 
-####### /Install {{ . }} ######
+# download to /tmp dir
+dra download --select monaspace-{{ . }}-{{$monaspaceLatest}}{{$extension}} --output "/tmp/" {{ $repo }}
+
+# Extract file
+tar xf "/tmp/monaspace-{{ . }}-{{$monaspaceLatest}}{{$extension}}" -C "/tmp/Monaspace"
+
 {{ end -}}
+
+####### Install Fonts #######
+#echo "== installing downloaded fonts =="
+# mv folder to fontsdir/Monaspace
+cp -R "/tmp/Monaspace/." "{{ $fontDir }}"
+
+####### /Install Fonts ######
 echo -e "\0033[0;32m>>>>> Finished Installing Monaspace {{ $monaspaceLatest }} <<<<<\033[0m"
 ############################# /Monaspace ############################
 {{- end }}

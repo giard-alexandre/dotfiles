@@ -3,7 +3,7 @@
 {{- $personalProjectFolder := promptStringOnce . "personalProjectFolder" "Personal Projects Folder (relative to home) (`c` will cd you there)" -}}
 {{- $hasWorkProfile := promptBoolOnce . "hasWorkProfile" "Does this machine have a work profile? Is this a work machine?" -}}
 
-{{- $fontPathDict := dict "linux" ".fonts" "darwin" "Library/Fonts" "windows" "AppData/Local/Microsoft/Windows/Fonts" -}}
+{{- $fontPathDict := dict "linux" ".fonts" "darwin" "$HOME/Library/Fonts" "windows" "AppData/Local/Microsoft/Windows/Fonts" -}}
 {{- $rustOsDict := dict "linux" "unknown-linux-gnu" "darwin" "apple-darwin" "windows" "pc-windows-msvc" -}}
 
 [data]
