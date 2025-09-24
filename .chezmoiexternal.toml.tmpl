@@ -121,8 +121,8 @@
 ####################### /Install Sad #######################
 
 ####################### Install Dra #######################
-{{- $draLatestGlob := (printf "dra-%s-%s-%s" .dra_latest .rust_arch .rust_os) -}}
-{{- $draLatestGlobTar := (printf "%s.tar.gz" $draLatestGlob) -}}
+{{- $draLatestGlob := (printf "dra-%s-%s-%s" (gitHubLatestRelease "devmatteini/dra").GetTagName .rust_arch .rust_os) }}
+{{- $draLatestGlobTar := (printf "%s.tar.gz" $draLatestGlob) }}
 {{ $draLatestAsset := (gitHubLatestReleaseAssetURL "devmatteini/dra" $draLatestGlobTar) }}
 [".local/bin/dra"]
     type = "archive-file"

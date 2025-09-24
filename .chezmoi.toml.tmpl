@@ -3,7 +3,7 @@
 {{- $personalProjectFolder := promptStringOnce . "personalProjectFolder" "Personal Projects Folder (relative to home) (`c` will cd you there)" -}}
 {{- $hasWorkProfile := promptBoolOnce . "hasWorkProfile" "Does this machine have a work profile? Is this a work machine?" -}}
 
-{{- $fontPathDict := dict "linux" ".fonts" "darwin" "Library/Fonts" "windows" "AppData/Local/Microsoft/Windows/Fonts" -}}
+{{- $fontPathDict := dict "linux" ".fonts" "darwin" "$HOME/Library/Fonts" "windows" "AppData/Local/Microsoft/Windows/Fonts" -}}
 {{- $rustOsDict := dict "linux" "unknown-linux-gnu" "darwin" "apple-darwin" "windows" "pc-windows-msvc" -}}
 
 [data]
@@ -25,5 +25,4 @@
     font_dir = {{ osClean (get $fontPathDict .chezmoi.os) | quote }}
     rust_arch = {{ (eq .chezmoi.arch "amd64") | ternary "x86_64" "aarch64" | quote }}
     rust_os = {{ get $rustOsDict .chezmoi.os | quote }}
-    dra_latest = "{{ (gitHubLatestRelease "devmatteini/dra").TagName }}"
 

@@ -14,5 +14,4 @@ fonts:
         extension: .zip
         fontNames:
             - frozen
-            - otf
-            - variable
+            - nerdfonts
