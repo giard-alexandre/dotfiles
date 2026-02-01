@@ -1,4 +1,4 @@
-{{- $miseLatest := (gitHubLatestRelease "jdx/mise").Name -}}
+{{- $miseLatest := (gitHubLatestRelease "jdx/mise").TagName -}}
 {{ $miseOsNameDict := dict "linux" "linux" "darwin" "macos" "windows" "INVALID_OS" }}
 {{ $miseOsName := (get $miseOsNameDict .chezmoi.os) }}
 {{ $miseOsArchDict := dict "amd64" "x64" "arm64" "arm64" }}
@@ -8,6 +8,7 @@
 [".local/bin/mise"]
     type = "archive-file"
     url = "https://github.com/jdx/mise/releases/download/{{ $miseLatest }}/mise-{{ $miseLatest }}-{{ $miseOsName }}-{{ $miseOsArch }}.tar.gz"
+    executable = true
     path = "mise/bin/mise"
 ####################### /Mise #######################
 
