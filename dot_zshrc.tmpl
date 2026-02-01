@@ -1,5 +1,6 @@
 #!/bin/zsh
-autoload -Uz compinit && compinit
+
+ZSH_DISABLE_COMPFIX=true
 
 # Load Dotfile defaults
 . "$HOME/.dotfiles/defaults.zsh"
@@ -17,17 +18,14 @@ done
 # load plugins
 source "$DOTFILES/oh-my-zsh/plugins.zsh"
 
-# Load our completions file.
-source "$DOTFILES/completions.zsh"
-
-# Load Oh-My-Zsh
+# Load Oh-My-Zsh (this runs compinit)
 source $HOME/.oh-my-zsh/oh-my-zsh.sh
+
+# Load our completions file (after compinit is available)
+source "$DOTFILES/completions.zsh"
 
 # Load our alias file.
 source "$DOTFILES/aliases.zsh"
-
-# Force re-completion
-autoload -U compinit && compinit
 
 # use .localrc for SUPER SECRET CRAP that you don't
 # want in your public, versioned repo.
