@@ -1,0 +1,33 @@
+#!/bin/bash
+# Create placeholder files for Nushell dynamic integrations
+# These files are required at parse-time but generated at runtime
+
+set -e
+
+# Mise placeholder
+if [ ! -f "${HOME}/.config/nushell/mise.nu" ]; then
+  cat > "${HOME}/.config/nushell/mise.nu" << 'EOF'
+# Mise initialization placeholder
+# This file will be overwritten by `mise activate nu` on first shell startup
+EOF
+  echo "Created mise.nu placeholder"
+fi
+
+# Zoxide placeholder
+if [ ! -f "${HOME}/.config/nushell/zoxide.nu" ]; then
+  cat > "${HOME}/.config/nushell/zoxide.nu" << 'EOF'
+# Zoxide initialization placeholder
+# This file will be overwritten by `zoxide init nushell` on first shell startup
+EOF
+  echo "Created zoxide.nu placeholder"
+fi
+
+# Starship placeholder
+mkdir -p "${HOME}/.cache/starship"
+if [ ! -f "${HOME}/.cache/starship/init.nu" ]; then
+  cat > "${HOME}/.cache/starship/init.nu" << 'EOF'
+# Starship initialization placeholder
+# This file will be overwritten by `starship init nu` on first shell startup
+EOF
+  echo "Created starship init.nu placeholder"
+fi

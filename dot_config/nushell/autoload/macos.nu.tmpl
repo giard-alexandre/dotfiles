@@ -2,6 +2,10 @@
 {{ if eq .chezmoi.os "darwin" -}}
 
 export alias airport = /System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport
-export alias afk = open -a /System/Library/CoreServices/ScreenSaverEngine.app
+
+# Activate screensaver
+export def afk [] {
+  ^open -a /System/Library/CoreServices/ScreenSaverEngine.app
+}
 
 {{- end }}

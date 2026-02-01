@@ -7,65 +7,71 @@ let carapace_completer = {|spans|
 }
 
 # Main configuration
-$env.config.show_banner = false
-$env.config.edit_mode = "emacs"
+$env.config = ($env.config | merge {
+  show_banner: false
+  edit_mode: "emacs"
+  footer_mode: 25
+  float_precision: 2
+  buffer_editor: $env.EDITOR
 
-$env.config.history = {
-  max_size: 100_000
-  sync_on_enter: true
-  file_format: "sqlite"
-}
-
-$env.config.completions = {
-  case_sensitive: false
-  quick: true
-  partial: true
-  algorithm: "fuzzy"
-  external: {
-    enable: true
-    max_results: 100
-    completer: $carapace_completer
+  shell_integration: {
+    osc2: true
+    osc7: true
+    osc8: true
+    osc9_9: false
+    osc133: true
+    osc633: true
+    reset_application_mode: true
   }
-}
 
-$env.config.cursor_shape = {
-  emacs: line
-}
+  history: {
+    max_size: 100_000
+    sync_on_enter: true
+    file_format: "sqlite"
+  }
 
-$env.config.color_config = $dark_theme
-$env.config.use_grid_icons = true
-$env.config.footer_mode = 25
-$env.config.float_precision = 2
-$env.config.shell_integration = true
-$env.config.buffer_editor = $env.EDITOR
+  completions: {
+    case_sensitive: false
+    quick: true
+    partial: true
+    algorithm: "fuzzy"
+    external: {
+      enable: true
+      max_results: 100
+      completer: $carapace_completer
+    }
+  }
+
+  cursor_shape: {
+    emacs: line
+  }
+})
 
 # Load autoload modules
 use autoload *
 
 # Initialize mise (version manager)
+# Note: Files are generated here but sourced below (source requires files at parse time)
 if (which mise | is-not-empty) {
-  let mise_path = ($env.XDG_CONFIG_HOME | path join "nushell" "mise.nu")
-  ^mise activate nu | save -f $mise_path
-  source $mise_path
+  ^mise activate nu | save -f ~/.config/nushell/mise.nu
 }
 
 # Initialize zoxide (smart directory jumping)
 if (which zoxide | is-not-empty) {
-  let zoxide_path = ($env.XDG_CONFIG_HOME | path join "nushell" "zoxide.nu")
-  ^zoxide init nushell | save -f $zoxide_path
-  source $zoxide_path
+  ^zoxide init nushell | save -f ~/.config/nushell/zoxide.nu
 }
 
 # Initialize Starship prompt
 if (which starship | is-not-empty) {
-  mkdir (~/.cache/starship | path expand)
-  let starship_path = (~/.cache/starship/init.nu | path expand)
-  ^starship init nu | save -f $starship_path
-  use $starship_path
+  mkdir ~/.cache/starship
+  ^starship init nu | save -f ~/.cache/starship/init.nu
 }
 
+# Source generated configurations
+source ~/.config/nushell/mise.nu
+source ~/.config/nushell/zoxide.nu
+use ~/.cache/starship/init.nu
+
 # Local overrides (not version controlled)
-let localrc = (~/.localrc.nu | path expand)
-if ($localrc | path exists) {
-  source $localrc
-}
+# To use: create ~/.localrc.nu with your custom configuration
+# Note: Due to Nushell's parse-time source, restart shell after creating the file

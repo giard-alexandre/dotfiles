@@ -1,18 +1,15 @@
 # Project navigation functions
 
 # Change to personal projects directory
-export def --env c [project?: string] {
+export def --env c [
+  project?: string@"nu-complete c"  # Project name with tab completion
+] {
   if ($project | is-empty) {
     cd $env.PROJECTS
   } else {
     cd ($env.PROJECTS | path join $project)
   }
 }
-
-# Completion for c command
-export extern "c" [
-  project?: string@"nu-complete c"
-]
 
 def "nu-complete c" [] {
   ls $env.PROJECTS
@@ -23,18 +20,15 @@ def "nu-complete c" [] {
 
 {{ if .has_work_profile -}}
 # Change to work projects directory
-export def --env cw [project?: string] {
+export def --env cw [
+  project?: string@"nu-complete cw"  # Project name with tab completion
+] {
   if ($project | is-empty) {
     cd $env.PROJECTS_WORK
   } else {
     cd ($env.PROJECTS_WORK | path join $project)
   }
 }
-
-# Completion for cw command
-export extern "cw" [
-  project?: string@"nu-complete cw"
-]
 
 def "nu-complete cw" [] {
   ls $env.PROJECTS_WORK

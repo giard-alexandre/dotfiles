@@ -1,3 +1,5 @@
 # Neovim alias
 
-export alias vim = nvim
+export def --wrapped main [...args] {
+  ^nvim ...$args
+}

@@ -1,0 +1,31 @@
+# Autoload module index
+# This file exports all modules in the autoload directory
+
+# Core system modules
+export use system.nu *
+export use git.nu *
+export use navigation.nu *
+
+# Development tools
+export use docker.nu *
+export use kubernetes.nu *
+export use terraform.nu *
+export use ruby.nu *
+export use dotnet.nu *
+
+# CLI utilities
+export use eza.nu *
+export use bat.nu *
+export use fzf.nu *
+export use vim.nu *
+export use ssh.nu *
+export use utilities.nu *
+export use homebrew.nu *
+
+# Platform-specific modules
+{{ if eq .chezmoi.os "darwin" -}}
+export use macos.nu *
+{{- end }}
+{{ if eq .chezmoi.os "linux" -}}
+export use apt.nu *
+{{- end }}

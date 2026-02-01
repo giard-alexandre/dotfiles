@@ -3,7 +3,10 @@
     "allow": [
       "Bash(ls:*)",
       "Bash(wc:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(nu -n -c:*)",
+      "Bash(nu:*)",
+      "Bash(chezmoi apply:*)"
     ]
   }
 }

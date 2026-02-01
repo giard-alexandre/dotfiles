@@ -1,3 +1,5 @@
 # FZF with bat preview
 
-export alias fzf = fzf --preview 'bat --color=always --style=numbers --line-range=:500 {}'
+export def --wrapped main [...args] {
+  ^fzf --preview 'bat --color=always --style=numbers --line-range=:500 {}' ...$args
+}

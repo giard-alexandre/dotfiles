@@ -16,8 +16,18 @@ export alias gaa = git add -A
 export alias gcm = git commit -s -m
 export alias gcam = git commit -s -a -m
 export alias gs = git status -sb
-export alias gpr = git push origin HEAD; git pr
-export alias glnext = git log --oneline (git describe --tags --abbrev=0 @^)..@
+
+# Push and create/view PR
+export def gpr [] {
+  ^git push origin HEAD
+  ^git pr
+}
+
+# Show commits since last tag
+export def glnext [] {
+  let last_tag = (^git describe --tags --abbrev=0 HEAD^ | str trim)
+  ^git log --oneline $"($last_tag)..HEAD"
+}
 
 # Gitignore generator
 export def gi [...langs: string] {

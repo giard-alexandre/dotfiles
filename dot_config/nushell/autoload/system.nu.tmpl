@@ -2,9 +2,12 @@
 
 # Aliases
 export alias grep = grep --color=auto
-export alias duf = du -sh * | sort -hr
 export alias less = less -r
-export alias watch = watch -c -d -t
+
+# Disk usage sorted by size
+export def duf [] {
+  ^du -sh * | lines | split column "\t" size name | sort-by size --reverse
+}
 
 # Custom commands
 export def cdr [] {
