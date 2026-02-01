@@ -1,0 +1,30 @@
+#!/bin/bash
+# Set nushell as default shell
+
+set -e
+
+NU_PATH=$(which nu 2>/dev/null || echo "")
+
+if [ -z "$NU_PATH" ]; then
+  echo "⚠️  Nushell not found in PATH. Skipping shell change."
+  exit 0
+fi
+
+echo "Found nushell at: $NU_PATH"
+
+# Add nushell to /etc/shells if not already there
+if ! grep -q "^$NU_PATH$" /etc/shells 2>/dev/null; then
+  echo "Adding nushell to /etc/shells..."
+  echo "$NU_PATH" | sudo tee -a /etc/shells > /dev/null
+  echo "✓ Added $NU_PATH to /etc/shells"
+fi
+
+# Check if nushell is already the default shell
+if [ "$SHELL" = "$NU_PATH" ]; then
+  echo "✓ Nushell is already your default shell"
+else
+  echo "Setting nushell as default shell..."
+  chsh -s "$NU_PATH"
+  echo "✓ Default shell set to nushell"
+  echo "  Log out and back in for changes to take effect (or run: exec nu)"
+fi

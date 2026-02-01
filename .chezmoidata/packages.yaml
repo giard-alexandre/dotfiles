@@ -2,13 +2,14 @@ packages:
     darwin:
         brews:
             # Shared
-            - 'zsh'
+            - 'nushell'
             - 'git'
             - 'curl'
             - 'zellij'
             - 'git-delta'
             - 'starship'
-            - 'nushell'
+            - 'carapace'
+            - 'zoxide'
             # /Shared
             - 'unzip'
             - 'koekeishiya/formulae/yabai'
@@ -24,24 +25,28 @@ packages:
     linux:
         apt:
             packages:
-                - 'zsh'
+                - 'nushell'
                 - 'git'
                 - 'curl'
                 - 'starship'
                 - 'zellij'
                 - 'git-delta'
+                - 'carapace'
+                - 'zoxide'
                 - 'tar'
                 - 'unzip'
                 - 'helix'
             repositories:
         pacman:
             packages:
-                - 'zsh'
+                - 'nushell'
                 - 'git'
                 - 'curl'
                 - 'starship'
                 - 'zellij'
                 - 'git-delta'
+                - 'carapace'
+                - 'zoxide'
                 - 'tar'
                 - 'unzip'
                 - 'helix'

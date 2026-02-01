@@ -1,5 +1,0 @@
-# TODO: Do we need to activate shims by adding their directory to path here?
-{{ $miseBin := (print .chezmoi.homeDir "/.local/bin/mise" ) -}}
-
-# setup mise
-eval "$({{ $miseBin }} activate zsh)"

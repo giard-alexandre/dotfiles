@@ -1,0 +1,21 @@
+#!/bin/bash
+set -euo pipefail
+
+echo ""
+echo -e "\033[0;32m✓ Dotfiles applied successfully!\033[0m"
+echo ""
+echo "Next steps:"
+echo "  1. Log out and log back in (or run: exec nu)"
+echo "  2. Verify mise tools: mise list"
+echo "  3. Test starship prompt"
+echo "  4. Test completions: kubectl <tab>, docker <tab>"
+echo ""
+
+echo "SSH key setup:"
+echo "  - Generate personal SSH key at: $HOME/.ssh/ssh_personal"
+{{ if .has_work_profile -}}
+echo "  - Generate work SSH key at: $HOME/.ssh/ssh_work"
+{{- end }}
+echo ""
+
+echo -e "\033[0;32m>>> Please close this terminal and open a new one to use Nushell! <<<\033[0m"

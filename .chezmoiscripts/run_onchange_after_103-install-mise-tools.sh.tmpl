@@ -1,0 +1,12 @@
+{{ if (or (eq .chezmoi.os "linux") (eq .chezmoi.os "darwin")) -}}
+#!/bin/bash
+
+{{- $configPath := osClean (print .chezmoi.homeDir "/.config/mise/config.toml" ) }}
+
+# Include file sum so that we re-run every time that file changes
+# {{ $configPath }} hash: {{ include $configPath | sha256sum }}
+
+echo "Installing mise tools..."
+mise install
+
+{{ end -}}

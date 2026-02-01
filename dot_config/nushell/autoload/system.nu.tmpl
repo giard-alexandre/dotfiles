@@ -1,0 +1,44 @@
+# System utilities and cross-platform compatibility
+
+# Aliases
+export alias grep = grep --color=auto
+export alias duf = du -sh * | sort -hr
+export alias less = less -r
+export alias watch = watch -c -d -t
+
+# Custom commands
+export def cdr [] {
+  cd (^git rev-parse --show-toplevel | str trim)
+}
+
+# Linux/macOS compatibility shims
+{{ if ne .chezmoi.os "darwin" -}}
+# Linux clipboard and open commands
+export def pbcopy [] {
+  if (which xclip | is-not-empty) {
+    ^xclip -selection clipboard
+  } else if (which xsel | is-not-empty) {
+    ^xsel --clipboard --input
+  } else {
+    error make {msg: "Neither xclip nor xsel is installed"}
+  }
+}
+
+export def pbpaste [] {
+  if (which xclip | is-not-empty) {
+    ^xclip -selection clipboard -o
+  } else if (which xsel | is-not-empty) {
+    ^xsel --clipboard --output
+  } else {
+    error make {msg: "Neither xclip nor xsel is installed"}
+  }
+}
+
+export def open [path: string] {
+  if (which xdg-open | is-not-empty) {
+    ^xdg-open $path
+  } else {
+    error make {msg: "xdg-open is not installed"}
+  }
+}
+{{- end }}

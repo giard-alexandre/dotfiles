@@ -1,6 +1,6 @@
 {{ if (eq .chezmoi.os "darwin") -}}
-#!/bin/zsh
-set -eufo pipefail
+#!/bin/bash
+set -euo pipefail
 echo -e "\0033[0;32m>>>>> Setting MacOS Defaults <<<<<\033[0m"
 
 echo -e "\0033[0;32m>> Auto-hide Dock <<\033[0m"
