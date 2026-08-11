@@ -3,9 +3,6 @@
 {{ $shellPathDict := dict "linux" "/usr/bin/zsh" "darwin" (print $macBrewPath "zsh") "windows" "pwsh.exe" -}}
 {{- $shellPath := osClean (get $shellPathDict .chezmoi.os) -}}
 
-{{ $zellijPathDict := dict "linux" "/usr/bin/zellij" "darwin" (print $macBrewPath "zellij") "windows" "zellij.exe" -}}
-{{- $zellijPath := osClean (get $zellijPathDict .chezmoi.os) -}}
-
 [general]
 live_config_reload = true
 import = [
@@ -65,11 +62,7 @@ mods = "None"
 history = 10000
 
 [terminal.shell]
-{{- if (not (eq .chezmoi.os "windows")) }}
-program = "{{ $zellijPath }}"
-{{ else }}
 program = "{{ $shellPath }}"
-{{ end }}
 [window]
 decorations = "full"
 dynamic_padding = false
