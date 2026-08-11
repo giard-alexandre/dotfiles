@@ -53,7 +53,6 @@ chezmoi cd
 # High-Level Tools Overview
 
 - zsh: shell of choice.
-- [zellij](https://zellij.dev/): tmux but modern, faster and with a more promising future.
 - [chezmoi](https://www.chezmoi.io/): used to manage these dotfiles and apply updates.
 - [mise](https://mise.jdx.dev/): install and manage multiple devtools versions (think `nvm`, but good and for almost all tools).
 - [alacritty](https://github.com/alacritty/alacritty): terminal emulator of choice.
