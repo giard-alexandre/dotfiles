@@ -1,0 +1,17 @@
+# Opt-in include; never replaces ~/.gitconfig or its credential settings.
+# Review identities and precedence before following docs/WINDOWS.md.
+[user]
+    email = {{ .personal_email | quote }}
+    name = {{ .full_name | quote }}
+[core]
+    editor = notepad.exe
+    pager = ""
+    autocrlf = input
+[init]
+    defaultBranch = main
+[alias]
+    co = checkout
+    count = shortlog -sn
+    lt = log --tags --decorate --simplify-by-decoration --oneline
+[commit]
+    template = ~/.dotfiles/git/template.txt

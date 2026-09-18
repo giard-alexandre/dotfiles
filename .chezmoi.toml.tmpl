@@ -1,4 +1,13 @@
 {{- includeTemplate "apply-prerequisites" . -}}
+{{- if eq .chezmoi.os "windows" -}}
+{{- $expectedXdg := printf "%s/.config" .chezmoi.homeDir | replace "\\" "/" | lower -}}
+{{- if ne (env "XDG_CONFIG_HOME" | replace "\\" "/" | lower) $expectedXdg -}}
+{{- fail "Set user/process XDG_CONFIG_HOME=<absolute home>/.config through the reviewed Windows preflight before init; reconcile conflicts first." -}}
+{{- end -}}
+{{- if ne .chezmoi.arch "amd64" -}}
+{{- fail "This Windows foundation currently requires x64." -}}
+{{- end -}}
+{{- end -}}
 {{- $fullName := promptStringOnce . "fullName" "Full Name" -}}
 {{- $personalEmail := promptStringOnce . "personalEmail" "Your personal email address" -}}
 {{- $personalProjectFolder := promptStringOnce . "personalProjectFolder" "Personal Projects Folder (relative to home) (`c` will cd you there)" -}}
@@ -10,7 +19,7 @@
 [data]
     full_name = {{ $fullName | quote }}
     personal_email = {{ $personalEmail | quote }}
-    personal_project_folder = {{ osClean (printf "%q" (print .chezmoi.homeDir "/" $personalProjectFolder)) }}
+    personal_project_folder = {{ joinPath .chezmoi.homeDir $personalProjectFolder | toString | quote }}
     has_work_profile = {{ $hasWorkProfile }}
 {{ if $hasWorkProfile}}
 {{- $workEmail := promptStringOnce . "workEmail" "Work Email address" -}}
@@ -19,7 +28,7 @@
 	when accessing work projects/machines. (mainly used for git)` }}
     # Work profile settings
     work_email = {{ $workEmail | quote }}
-    work_project_folder = {{ osClean (printf "%q" (print .chezmoi.homeDir "/" $workProjectFolder)) }}
+    work_project_folder = {{ joinPath .chezmoi.homeDir $workProjectFolder | toString | quote }}
     work_hosts_string = {{ $workHostString | quote }}
     # End Work profile settings
 {{ end }}

@@ -4,5 +4,33 @@ README.MD
 AGENTS.md
 
 docs/
+docs/**
+scripts/
+scripts/**
 tests/
 tests/**
+.github/
+.github/**
+
+{{ if eq .chezmoi.os "windows" -}}
+{{ template "windows-xdg-check" . }}
+# Deliberate native Windows allowlist, including parent directories.
+**
+!.config/
+!.config/nushell/
+!.config/nushell/config.nu
+!.config/nushell/env.nu
+!.config/git/
+!.config/git/windows.inc
+!.config/mise/
+!.config/mise/windows.toml
+!.dotfiles/
+!.dotfiles/git/
+!.dotfiles/git/template.txt
+!.editorconfig
+# Existing .gitconfig and credentials remain completely unmanaged on Windows.
+{{ else -}}
+.config/git/
+.config/git/**
+.config/mise/windows.toml
+{{ end -}}

@@ -1,0 +1,13 @@
+{{- if eq .chezmoi.os "windows" -}}
+{{- $expected := printf "%s/.config" .chezmoi.homeDir | replace "\\" "/" | lower -}}
+{{- $actual := env "XDG_CONFIG_HOME" | replace "\\" "/" | lower -}}
+{{- if ne $actual $expected -}}
+{{- fail "Windows requires user/process XDG_CONFIG_HOME=<absolute home>/.config before chezmoi, Nu or Neovim starts. See docs/WINDOWS.md; do not overwrite conflicting settings." -}}
+{{- end -}}
+{{- if ne .chezmoi.arch "amd64" -}}
+{{- fail "This Windows foundation is limited to x64 pending native validation." -}}
+{{- end -}}
+{{- if ne (.chezmoi.destDir | replace "\\" "/" | lower) (.chezmoi.homeDir | replace "\\" "/" | lower) -}}
+{{- fail "Windows destination must be the current user's home." -}}
+{{- end -}}
+{{- end -}}
