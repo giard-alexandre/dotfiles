@@ -1,3 +1,4 @@
+{{- if ne .chezmoi.os "windows" -}}
 {{- $miseLatest := (gitHubLatestRelease "jdx/mise").TagName -}}
 {{ $miseOsNameDict := dict "linux" "linux" "darwin" "macos" "windows" "INVALID_OS" }}
 {{ $miseOsName := (get $miseOsNameDict .chezmoi.os) }}
@@ -141,3 +142,4 @@
     executable = true
     path = "age/age"
 ####################### /Install age ######################
+{{- end }}

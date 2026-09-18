@@ -1,3 +1,4 @@
+{{- if ne .chezmoi.os "windows" -}}
 #!/bin/zsh
 set -eufo pipefail
 
@@ -11,3 +12,4 @@ echo -e "Generate an ssh key for your personal profile at location: $HOME/.ssh/s
 
 
 echo -e "\0033[0;32m>>>>> !!!Please close this terminal tab and open a new one to pick up any new configs!!! <<<<<\033[0m"
+{{- end }}

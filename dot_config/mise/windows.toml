@@ -1,0 +1,8 @@
+# Explicit Windows subset, NOT an automatically loaded conf.d/global config.
+# scripts/windows/developer-tools.ps1 and Nu `dev` pass these exact specs to
+# mise with MISE_NO_CONFIG=1. No project config or broad trust is involved.
+# Review version/backend changes before explicit provisioning. See docs/WINDOWS.md.
+[tools]
+"aqua:neovim/neovim" = "0.11.6"
+"aqua:BurntSushi/ripgrep" = "15.1.0"
+"aqua:sharkdp/fd" = "10.3.0"

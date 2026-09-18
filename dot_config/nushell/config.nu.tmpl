@@ -1,0 +1,108 @@
+{{ if eq .chezmoi.os "windows" -}}
+# XDG_CONFIG_HOME must be inherited before Nu starts, not assigned here.
+$env.config.show_banner = false
+let history_dir = ($env.LOCALAPPDATA | path join "nushell")
+mkdir $history_dir
+$env.config.history = {
+    file_format: sqlite
+    max_size: 1_000_000
+    sync_on_enter: true
+    isolation: false
+    path: ($history_dir | path join "history.sqlite3")
+}
+alias ll = ls -l
+alias lla = ls -la
+
+# Explicit argv execution, not activation. Nothing below runs until invoked.
+def --wrapped dev [...args: string] {
+    if ($args | is-empty) { error make {msg: "Usage: dev <command> [arguments]"} }
+    if ($env | columns | any {|key| $key | str starts-with 'MISE_'}) {
+        error make {msg: "Use a clean Nu session without MISE_* overrides/activation"}
+    }
+    if $env.XDG_CONFIG_HOME != {{ joinPath .chezmoi.homeDir ".config" | quote }} {
+        error make {msg: "XDG_CONFIG_HOME must be the canonical home .config path"}
+    }
+    # Embed the source-reviewed table at render time, never trust arbitrary runtime specs.
+    let expected = ({{ include "dot_config/mise/windows.toml" | fromToml | toJson | quote }} | from json)
+    let manifest = (open ($env.XDG_CONFIG_HOME | path join mise windows.toml))
+    if $manifest != $expected {
+        error make {msg: "Windows manifest differs from the reviewed table; reconcile reviewed config"}
+    }
+    let commands = (which --all mise.exe | where type == external | get path | uniq)
+    if ($commands | length) != 1 {
+        error make {msg: "Exactly one native mise.exe must be on PATH; resolve ownership first"}
+    }
+    let mise = ($commands | first)
+    let receipt = (open ($env.LOCALAPPDATA | path join mise-windows ownership.json))
+    let digest = (open --raw $mise | hash sha256)
+    if ($receipt.package != 'jdx.mise') or ($receipt.path != $mise) or ($receipt.sha256 != $digest) {
+        error make {msg: "mise ownership is unconfirmed or changed; run bootstrap -InstallDeveloperTools for manual review"}
+    }
+    let tools = $manifest.tools
+    let specs = ($tools | transpose tool version | each {|item| $"($item.tool)@($item.version)"})
+    with-env {
+        MISE_NO_CONFIG: '1'
+        MISE_AUTO_INSTALL: '0'
+        MISE_EXEC_AUTO_INSTALL: '0'
+        MISE_DATA_DIR: ($env.LOCALAPPDATA | path join mise-windows data)
+        MISE_CACHE_DIR: ($env.LOCALAPPDATA | path join mise-windows cache)
+        MISE_STATE_DIR: ($env.LOCALAPPDATA | path join mise-windows state)
+    } {
+        for spec in $specs {
+            let installed = (^$mise where $spec | complete)
+            if $installed.exit_code != 0 {
+                error make {msg: $"Missing ($spec); run the explicit Windows provisioning step. ($installed.stderr)"}
+            }
+        }
+        ^$mise exec ...$specs -- ...$args
+    }
+}
+{{ else -}}
+$env.config.show_banner = false
+
+$env.config.history = {
+  file_format: sqlite
+  max_size: 1_000_000
+  sync_on_enter: true
+  isolation: false
+}
+
+$env.config.completions.algorithm = "prefix"
+$env.config.completions.sort = "smart"
+
+$env.config.footer_mode = "auto"
+
+# ---------------
+# Plugin behavior
+# ---------------
+# Per-plugin configuration. See https://www.nushell.sh/contributor-book/plugins.html#plugin-configuration
+$env.config.plugins = {}
+
+# TODO: Extract to other file and import
+# Aliases
+alias ll = ls -l
+alias lla = ls -la
+
+# TODO: Theme, completions, aliases, nu_scripts?
+
+
+# TODO:
+# completer (closure with a |spans| parameter): A command to call for *argument* completions
+ # to commands (internal or external).
+ #
+ # The |spans| parameter is a list of strings representing the tokens (spans)
+ # on the current commandline. It is always a list of at least two strings - The
+ # command being completed plus the first argument of that command ("" if no argument has
+ # been partially typed yet), and additional strings for additional arguments beyond
+ # the first.
+ #
+ # This setting is usually set to a closure which will call a third-party completion system, such
+ # as Carapace.
+ #
+ # Note: The following is an over-simplified completer command that will call Carapace if it
+ # is installed. Please use the official Carapace completer, which can be generated automatically
+ # by Carapace itself. See the Carapace documentation for the proper syntax.
+ #$env.config.completions.external.completer = {|spans|
+ #  carapace $spans.0 nushell ...$spans | from json
+ #}
+{{ end -}}
