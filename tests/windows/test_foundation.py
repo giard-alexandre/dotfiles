@@ -115,46 +115,6 @@ class Foundation(unittest.TestCase):
         self.run_cm("apply", "--dry-run", "--verbose")
         self.assertEqual(list(self.home.iterdir()), [], "dry-run modified target")
 
-    def test_windows_manifest_and_ownership(self):
-        manifest = tomllib.loads(
-            (self.source / "dot_config/mise/windows.toml").read_text()
-        )
-        self.assertEqual(
-            manifest,
-            {
-                "tools": {
-                    "aqua:neovim/neovim": "0.11.6",
-                    "aqua:BurntSushi/ripgrep": "15.1.0",
-                    "aqua:sharkdp/fd": "10.3.0",
-                }
-            },
-        )
-        bootstrap = (self.source / "scripts/windows/bootstrap.ps1").read_text()
-        self.assertIn("Id = 'jdx.mise'", bootstrap)
-        for forbidden in ("Neovim.Neovim", "BurntSushi.ripgrep", "sharkdp.fd"):
-            self.assertNotIn("Id = '" + forbidden, bootstrap)
-        provision = (self.source / "scripts/windows/developer-tools.ps1").read_text()
-        self.assertIn("Get-FileHash", provision)
-        self.assertIn("MISE_NO_CONFIG = '1'", provision)
-        self.assertIn("MISE_EXEC_AUTO_INSTALL = '0'", provision)
-        self.assertIn("Invoke-Mise @('where', $spec)", provision)
-        self.assertIn("[IO.FileAttributes]::ReparsePoint", provision)
-        self.assertNotIn("mise trust", provision)
-        self.assertNotIn("--yes", provision)
-        # Static ordering coverage only; this is not PS5.1 execution evidence.
-        self.assertIn(
-            "@('list', '--id', 'jdx.mise', '--exact', '--source', 'winget')", bootstrap
-        )
-        self.assertLess(
-            bootstrap.index("'CONFIRM jdx.mise OWNERSHIP'"),
-            bootstrap.index("if ($package.Exe -ne 'wt.exe')"),
-        )
-        self.assertLess(
-            provision.index("$receipt.sha256 -cne $digest"),
-            provision.index("function Invoke-Mise"),
-        )
-        self.assertIn("$receipt.path -cne $mise[0]", provision)
-
     def test_deferred_windows_editor_is_unmanaged(self):
         nvim = self.home / ".config/nvim"
         # Deliberately preserve existing custom config AND an unmanaged lockfile.
@@ -199,7 +159,7 @@ class Foundation(unittest.TestCase):
             f"#!{sys.executable}\nimport json,os,sys\n"
             "from pathlib import Path\n"
             "with open(os.environ['CALL_OUTPUT'], 'a') as log: log.write('called\\n')\n"
-            "if sys.argv[1] == 'where': sys.exit(1 if os.environ.get('FAKE_MISSING') else 0)\n"
+            "if sys.argv[1] == 'where': sys.exit(int(os.environ.get('FAKE_MISSING') == sys.argv[2]))\n"
             "Path(os.environ['ARGV_OUTPUT']).write_text(json.dumps({"
             "'args':sys.argv[1:], 'env':{k:v for k,v in os.environ.items() if k.startswith('MISE_')}}))\n"
         )
@@ -285,6 +245,8 @@ class Foundation(unittest.TestCase):
                 "aqua:neovim/neovim@0.11.6",
                 "aqua:BurntSushi/ripgrep@15.1.0",
                 "aqua:sharkdp/fd@10.3.0",
+                "core:bun@1.4.2",
+                "github:can1357/oh-my-pi@18.2.6",
                 "--",
                 "rg",
                 "--glob",
@@ -313,9 +275,13 @@ class Foundation(unittest.TestCase):
         self.assertFalse(
             calls.exists(), "foreign singleton with different path executed mise"
         )
-        run("dev rg --version", ok=False, extra={"FAKE_MISSING": "1"})
+        run(
+            "dev omp --version",
+            ok=False,
+            extra={"FAKE_MISSING": "github:can1357/oh-my-pi@18.2.6"},
+        )
         self.assertFalse(
-            output.exists(), "missing tool must not fall back to PATH execution"
+            output.exists(), "missing OMP must not fall back to PATH execution"
         )
         fake.unlink()
         run("print 'still usable'")

@@ -253,13 +253,15 @@ Current authoritative references rechecked for this slice:
 
 WinGet owns **only** Git, chezmoi, Nu, Terminal and `jdx.mise` in this stage.
 The shared Unix mise `latest` inventory, conf.d settings and trusted paths remain
-excluded. The three Windows tools have one owner, **mise's native Aqua backend**:
+excluded. The five Windows tools have one owner, **mise**, using built-in backends:
 
 | Tool / executable | Exact specification | Reviewed Windows x64 artifact |
 | --- | --- | --- |
 | Neovim / `nvim.exe` | `aqua:neovim/neovim@0.11.6` | `nvim-win64.zip`, `nvim-win64/bin/nvim.exe` |
 | ripgrep / `rg.exe` | `aqua:BurntSushi/ripgrep@15.1.0` | `ripgrep-15.1.0-x86_64-pc-windows-msvc.zip` |
 | fd / `fd.exe` | `aqua:sharkdp/fd@10.3.0` | `fd-v10.3.0-x86_64-pc-windows-msvc.zip` |
+| Bun / `bun.exe` | `core:bun@1.4.2` | `bun-windows-x64.zip` (baseline variant selected when needed) |
+| OMP / `omp.exe` | `github:can1357/oh-my-pi@18.2.6` | `omp-windows-x64.exe` |
 
 Aqua here is built into mise: no Aqua CLI, asdf plugin, Bash, compiler or custom
 archive installer. Neovim's archive also bundles its runtime/support files; keep
@@ -267,6 +269,15 @@ that archive installation intact. No Node, Python, Go, fzf, native compiler or
 language server is installed implicitly. Git is sufficient for plugin acquisition;
 rg/fd are useful standalone CLIs and future picker dependencies. No LazyVim,
 plugins, compiler or font is provisioned by this slice.
+
+Bun supports native Windows; OMP publishes a native Windows x64 executable.
+OMP uses its upstream-documented mise GitHub backend rather than the Unix npm
+backend. No npm global install, Node dependency, Bun-global PATH entry or shared
+`npm.package_manager` setting is needed. Bun remains separately available for
+projects and OMP's Bun-backed functionality.
+Sources: [Bun installation](https://bun.sh/docs/installation),
+[OMP installation](https://github.com/can1357/oh-my-pi#install),
+[mise GitHub backend](https://mise.jdx.dev/dev-tools/backends/github.html).
 
 From a clean, non-activated PowerShell process, after section 3's preflight,
 diff/dry-run/conflict review and consented apply:
@@ -331,6 +342,9 @@ versions. Tools are intentionally **not** bare PATH commands in a plain shell:
 dev nvim -u NONE # plain Neovim; LazyVim deployment is explicitly deferred
 dev rg --version
 dev fd --version
+dev bun --version
+dev omp --version
+dev omp
 dev rg --glob '*.lua' 'two words' .
 ```
 
@@ -350,13 +364,19 @@ is **not** proof of Windows `.exe`/`.cmd` behavior. PS5.1 native argument quotin
 (including embedded quotes/empty arguments) remains a gate; prefer Nu for complex
 argv until validated. The wrapper is not a shell sandbox for the command you run.
 
-Version updates are manual: review upstream assets/registry/hooks, edit the three
+Version updates are manual: review upstream assets/registry/hooks, edit the relevant
 pins in source, review the target diff, apply with consent, then rerun `-Install`.
 A changed/customized deployed manifest stops the PowerShell runner. Preserve and
-reconcile it, do not force replacement. No duplicate WinGet Neovim/rg/fd ownership,
+reconcile it, do not force replacement. No duplicate WinGet/global tool ownership,
 `mise use -g`, `mise trust`, floating `latest`, automatic uninstall or update.
-No Windows mise lock/digest attestation has been generated on this host: Aqua
-verification uses package metadata and the installed mise's bundled registry.
+The installer rejects existing Bun/OMP executables and OMP npm/PowerShell shims
+on PATH before provisioning; reconcile those installations manually first.
+On Darwin, a disposable `mise lock --platform windows-x64` resolved the pinned
+Bun and OMP Windows assets and checksums. A separate isolated mise install/exec
+smoke check ran `bun --version` and `omp --version` using Darwin binaries.
+No lockfile is deployed: mise's built-in backends perform release verification.
+Native Windows installation, executable naming and PowerShell execution remain
+validation gates; cross-platform resolution is not native execution proof.
 Version pins are not a claim of independent artifact provenance.
 
 ## 7. LazyVim explicitly deferred by user decision

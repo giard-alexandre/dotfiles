@@ -91,6 +91,12 @@ mise exec -- omp --version
 mise upgrade bun 'npm:@oh-my-pi/pi-coding-agent'
 ```
 
+Windows also provisions Bun and OMP through mise, using pinned versions in the
+isolated `windows.toml` profile. OMP uses the native GitHub release backend there,
+not the Unix npm backend. After the explicit Windows provisioning step, use
+`dev bun --version` and `dev omp` in Nu. See
+[Windows developer-tool provisioning](docs/WINDOWS.md#6-explicit-developer-tool-provisioning-after-reviewed-apply).
+
 # Optional Configs
 
 # High-Level Tools Overview
