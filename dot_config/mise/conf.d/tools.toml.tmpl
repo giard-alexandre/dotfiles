@@ -5,8 +5,8 @@ neovim = 'latest'
 bat = 'latest'
 dprint = 'latest'
 eza = 'latest'
-# Pinned for Intel Mac compatibility.
-fd = '10.3.0'
+# Pin fd on Intel Macs; use the latest release on other platforms.
+fd = '{{ if and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64") }}10.3.0{{ else }}latest{{ end }}'
 fzf = 'latest'
 fx = 'latest'
 gojq = 'latest'
