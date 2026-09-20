@@ -5,14 +5,17 @@ neovim = 'latest'
 bat = 'latest'
 dprint = 'latest'
 eza = 'latest'
-fd = 'latest'
+# Pin fd on Intel Macs; use the latest release on other platforms.
+fd = '{{ if and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64") }}10.3.0{{ else }}latest{{ end }}'
 fzf = 'latest'
 fx = 'latest'
 gojq = 'latest'
 jqp = 'latest'
 ripgrep = 'latest'
+"npm:@oh-my-pi/pi-coding-agent" = 'latest'
 
 # Languages
+bun = 'latest'
 node = 'latest'
 go = 'latest'
 go-jsonnet = 'latest'
