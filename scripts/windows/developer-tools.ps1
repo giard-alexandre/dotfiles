@@ -38,11 +38,11 @@ if (-not (Test-Path -LiteralPath $configPath) -or
 }
 $specs = @()
 foreach ($line in (Get-Content -LiteralPath $configPath)) {
-    if ($line -match '^"(aqua:[A-Za-z0-9_/-]+)" = "([0-9]+\.[0-9]+\.[0-9]+)"$') {
+    if ($line -match '^"((?:aqua:[A-Za-z0-9_/-]+|core:bun|github:can1357/oh-my-pi))" = "([0-9]+\.[0-9]+\.[0-9]+)"$') {
         $specs += "$($Matches[1])@$($Matches[2])"
     } elseif ($line -notmatch '^\s*(#.*|\[tools\])?$') { throw "Unsupported manifest syntax: $line" }
 }
-if ($specs.Count -ne 3) { throw 'Expected exactly three reviewed tools.' }
+if ($specs.Count -ne 5) { throw 'Expected exactly five reviewed tools.' }
 $localData = [Environment]::GetFolderPath('LocalApplicationData')
 if ($localData -ine $env:LOCALAPPDATA) { throw 'Unexpected LocalAppData mapping.' }
 $receiptPath = Join-Path $localData 'mise-windows\ownership.json'
@@ -85,8 +85,8 @@ try {
         & (Join-Path $PSScriptRoot 'bootstrap.ps1')
         if (-not $?) { throw 'Preflight failed.' }
         # Foreign PATH copies, including WinGet copies, require manual ownership review.
-        foreach ($name in @('nvim.exe', 'rg.exe', 'fd.exe')) {
-            if (Get-Command $name -CommandType Application -ErrorAction SilentlyContinue) {
+        foreach ($name in @('nvim.exe', 'rg.exe', 'fd.exe', 'bun.exe', 'bunx.exe', 'omp.exe', 'omp.cmd', 'omp.ps1')) {
+            if (Get-Command $name -CommandType @('Application', 'ExternalScript') -ErrorAction SilentlyContinue) {
                 throw "Existing $name on PATH: reconcile ownership first; nothing is uninstalled."
             }
         }
@@ -102,7 +102,7 @@ try {
         # Direct argv mode, never mise -c / shell string evaluation.
         Invoke-Mise (@('exec') + $specs + @('--', $Run) + $ToolArguments)
     } else {
-        foreach ($name in @('nvim', 'rg', 'fd')) {
+        foreach ($name in @('nvim', 'rg', 'fd', 'bun', 'omp')) {
             Invoke-Mise (@('exec') + $specs + @('--', $name, '--version'))
         }
     }

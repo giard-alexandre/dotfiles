@@ -6,3 +6,5 @@
 "aqua:neovim/neovim" = "0.11.6"
 "aqua:BurntSushi/ripgrep" = "15.1.0"
 "aqua:sharkdp/fd" = "10.3.0"
+"core:bun" = "1.4.2"
+"github:can1357/oh-my-pi" = "18.2.6"

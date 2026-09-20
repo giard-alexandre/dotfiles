@@ -10,6 +10,18 @@ the draft; their findings are reconciled below. The first implementation receive
 independent review: READY / OK with notes for a bounded preview only. Native Windows
 execution and release acceptance remain pending.
 
+## Bun and OMP expansion
+
+The current Windows inventory adds `core:bun@1.4.2` and
+`github:can1357/oh-my-pi@18.2.6` to the original three Aqua tools.
+This supersedes the three-tool-only scope in earlier checkpoints below.
+Both remain mise-owned and explicitly provisioned; Nu embeds the expanded
+reviewed manifest automatically. OMP uses its upstream native release, not npm.
+Windows x64 URLs/checksums were resolved with a disposable cross-platform mise
+lock; isolated Darwin installs ran both version commands successfully.
+Native Windows/PS5.1 execution remains pending. See `WINDOWS.md` section 6 for
+current provisioning, ownership and verification details.
+
 ## Latest adversarial review fixes
 
 - Replaced the moving `HEAD:dot_config/nushell/config.nu` test baseline with a
