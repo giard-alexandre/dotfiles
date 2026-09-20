@@ -1,10 +1,12 @@
 {{ if (or (eq .chezmoi.os "linux") (eq .chezmoi.os "darwin")) -}}
 #!/bin/zsh
 
-{{- $configPath := osClean (print .chezmoi.homeDir "/.config/mise/config.toml" ) }}
-
-# Include file sum so that we re-run every time that file changes
-# {{ $configPath }} hash: {{ include $configPath | sha256sum }}
+{{- $configPath := joinPath .chezmoi.homeDir ".config/mise/config.toml" }}
+# {{ $configPath }} hash: {{ if stat $configPath }}{{ include $configPath | sha256sum }}{{ else }}{{ include "dot_config/mise/create_config.toml" | sha256sum }}{{ end }}
+# Re-run when managed mise configuration changes, including the tool inventory.
+{{ range glob (joinPath .chezmoi.sourceDir "dot_config/mise/conf.d/*") -}}
+# {{ base . }} hash: {{ includeTemplate . $ | sha256sum }}
+{{ end -}}
 mise install
 
 {{ end -}}

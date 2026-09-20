@@ -5,14 +5,17 @@ neovim = 'latest'
 bat = 'latest'
 dprint = 'latest'
 eza = 'latest'
-fd = 'latest'
+# Pinned for Intel Mac compatibility.
+fd = '10.3.0'
 fzf = 'latest'
 fx = 'latest'
 gojq = 'latest'
 jqp = 'latest'
 ripgrep = 'latest'
+"npm:@oh-my-pi/pi-coding-agent" = 'latest'
 
 # Languages
+bun = 'latest'
 node = 'latest'
 go = 'latest'
 go-jsonnet = 'latest'

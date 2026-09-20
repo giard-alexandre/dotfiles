@@ -48,6 +48,23 @@ chezmoi upgrade
 chezmoi cd
 ```
 
+## Bun and OMP
+
+On macOS/Linux, mise installs Bun and [OMP](https://github.com/can1357/oh-my-pi)
+from the managed `conf.d/tools.toml` inventory. The global mise setting
+`npm.package_manager = "bun"` selects Bun for all mise-managed `npm:` tools.
+It does not alias `npm` or change application projects' package managers.
+
+The chezmoi provisioning hook runs `mise install` when the managed configuration
+changes. Existing mise shell activation exposes `bun` and `omp`; no separate
+Bun-global installation or PATH entry is needed.
+
+```sh
+mise exec -- omp --version
+# Explicitly upgrade the selected tools:
+mise upgrade bun 'npm:@oh-my-pi/pi-coding-agent'
+```
+
 # Optional Configs
 
 # High-Level Tools Overview
