@@ -24,8 +24,11 @@
 {{ if $hasWorkProfile}}
 {{- $workEmail := promptStringOnce . "workEmail" "Work Email address" -}}
 {{- $workProjectFolder := promptStringOnce . "workProjectFolder" "Work Projects Folder (relative to home) (`cw` will cd you there)" }}
-{{- $workHostString := promptStringOnce . "workHostString" `Space-separated list of Domain patterns to use for work. Used to link the right ssh key
-	when accessing work projects/machines. (mainly used for git)` }}
+{{- $workHostString := "" -}}
+{{- if ne .chezmoi.os "windows" -}}
+{{- $workHostString = promptStringOnce . "workHostString" `Space-separated list of Domain patterns to use for work. Used to link the right ssh key
+	when accessing work projects/machines. (mainly used for git)` -}}
+{{- end }}
     # Work profile settings
     work_email = {{ $workEmail | quote }}
     work_project_folder = {{ joinPath .chezmoi.homeDir $workProjectFolder | toString | quote }}

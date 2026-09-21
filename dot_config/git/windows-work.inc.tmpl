@@ -1,0 +1,8 @@
+{{ if .has_work_profile -}}
+# Included after the personal defaults for repositories under the work directory.
+[user]
+    name = {{ .full_name | quote }}
+    email = {{ .work_email | quote }}
+[core]
+    sshCommand = "ssh -F none -o IdentitiesOnly=yes -o IdentityFile=~/.ssh/ssh_work -o PreferredAuthentications=publickey"
+{{ end -}}

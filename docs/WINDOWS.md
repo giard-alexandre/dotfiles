@@ -15,10 +15,16 @@ Canonical managed targets are existing `dot_config` destinations. Never relocate
 Changing XDG config discovery affects other applications: inspect existing configs
 first. Conflicting process/user/machine values stop setup, not overwrite them.
 
+The target is managed-file parity with macOS/Linux wherever Windows supports the
+application and behavior. The current allowlist is an incremental safety boundary,
+not a permanent minimal/opt-in Windows design. Remaining portable files and settings
+are pending ports; only genuinely incompatible behavior should stay excluded.
+
 Only these Windows files are currently managed:
 
 - `~/.config/nushell/config.nu` and `env.nu`: plain prompt, `ll`/`lla`, SQLite history.
-- `~/.config/git/windows.inc`: optional, explicitly included Git baseline.
+- `~/.gitconfig` and `~/.config/git/windows.inc`: automatically loaded Git defaults.
+- `~/.config/git/windows-work.inc`: conditional work identity/key, when enabled.
 - `~/.dotfiles/git/template.txt` and `~/.editorconfig`.
 - `~/.config/mise/windows.toml`: explicit, pinned Windows tool inventory only.
 
@@ -28,9 +34,11 @@ template rendering. Nu's plugin registry and vendor/data paths retain upstream d
 no plugins/integrations are provisioned. Verify discovery on the installed Nu
 version. No Starship/mise command runs during rendering or startup.
 
-Existing `.gitconfig`, credential helpers, work includes and `.gitignore` are
-**unmanaged on Windows**. The opt-in include avoids replacing unknown Git settings.
-Do not manually render/apply the Unix `.gitconfig` there. The bounded mise stage
+Windows `.gitconfig` is managed by chezmoi, like macOS/Linux. Review and back up
+existing contents before applying: the new file replaces them, not merges them.
+Credential stores, private SSH keys, `.ssh/config` and `.gitignore` remain unmanaged
+in this slice. System Git Credential Manager settings are not overridden; existing
+user-level credential configuration must be reconciled before replacement. The mise stage
 below is implemented, but **not native-validated**. The user explicitly deferred
 LazyVim deployment after a source/external collision was identified (section 7).
 Windows Neovim configs remain unmanaged; Unix NvChad stays unchanged. Other tools,
@@ -148,27 +156,112 @@ preflight's registry/reparse-point checks or conflict review. Chezmoi may initia
 its own cache/state even in a dry-run; no zero-internal-writes guarantee is made.
 Do not customize the destination or bypass the normal source ignore/template flow.
 
-## 4. Git: preserve credentials and local policy
+## 4. Git: personal/work identity and SSH keys
 
-Inspect `git.exe config --show-origin --list` locally (do not publish credentials or
-identity values). Inspect the new `windows.inc`. If opting in, back up `~/.gitconfig`
-exactly, then edit it with Notepad to add **one** include, normally near the start
-so later local/work settings keep precedence:
+The existing chezmoi prompts supply `full_name`, `personal_email`,
+`has_work_profile`, `work_email` and `work_project_folder`. Windows no longer asks
+for work host patterns: the repository directory selects both identity and key.
+Personal identity is the default everywhere; repositories under the work folder
+use the work email and key. `personal_project_folder` is your organizational
+default, not a restriction on personal repositories.
 
-```gitconfig
-[include]
-    path = ~/.config/git/windows.inc
+Chezmoi installs the root `~/.gitconfig` automatically during the normal reviewed
+apply. It loads `~/.config/git/windows.inc`, which conditionally loads
+`windows-work.inc`. No manual include or separate activation is required.
+
+Before applying, inspect `git.exe config --show-origin --list` locally (do not
+publish identity or credential values). Back up the existing `.gitconfig` exactly
+and review the replacement in `chezmoi diff`. This is a replacement, **not a merge**:
+custom user-level settings, credential-helper declarations and old includes are
+not automatically carried forward. Reconcile anything still required before apply;
+do not commit credentials or machine-only settings to the shared source tree.
+System/repo-local configuration and credential stores are not changed.
+
+The Windows defaults do not set a credential helper, so an existing system-level
+Git Credential Manager remains effective; Unix's `cache` helper is not deployed.
+Repo-local settings and `git -c` retain normal precedence. The baseline still
+avoids uninstalled delta, merge GUI and shell-helper dependencies; it uses Notepad,
+no pager, and the commit template. Those integration gaps remain future ports,
+not a permanent opt-in ownership policy.
+
+| Repository | Commit email | SSH identity file |
+| --- | --- | --- |
+| Outside the work folder (or work profile disabled) | `personal_email` | `~/.ssh/ssh_personal` |
+| Under `work_project_folder`, including nested repos | `work_email` | `~/.ssh/ssh_work` |
+
+Git's `gitdir/i` match uses forward slashes, a directory boundary and
+case-insensitive matching. Keep non-ASCII characters' spelling/case consistent:
+Git's case folding is not full Unicode case folding. Linked worktrees follow the
+original repository's Git metadata location, not necessarily the worktree folder.
+Moving a repository across the work-folder boundary changes its selected profile.
+
+**SSH isolation:** `core.sshCommand` invokes OpenSSH with `-F none`, one
+`IdentityFile`, `IdentitiesOnly=yes`, and public-key-only authentication.
+It does not read user/system SSH configuration, so their extra identities cannot
+accumulate; host-key checking remains enabled. The same `git@github.com:...` host
+can therefore serve both accounts without aliases. Existing `~/.ssh/config` is
+not modified, and ordinary non-Git SSH is unaffected. Git SSH aliases, proxies,
+ports and other options previously supplied by that config will not be inherited:
+review any required repo-local `core.sshCommand` exception before applying.
+Keys/passphrases are never provisioned, imported or stored by chezmoi.
+`GIT_SSH_COMMAND` can override this selection; inspect inherited overrides and
+ensure Git uses OpenSSH, not PuTTY/plink. HTTPS remotes use the existing credential
+helper, not these keys.
+
+### Create machine-local keys explicitly
+
+On Windows, inspect the existing `.ssh` directory and permissions first. Reuse
+already-approved keys at the expected paths, or generate separate machine-local
+keys. Do not copy private keys into the source tree or overwrite existing files.
+In PowerShell, for a **new personal key**:
+
+```powershell
+$keygen = (Get-Command ssh-keygen.exe -CommandType Application -ErrorAction Stop).Source
+$key = Join-Path $env:USERPROFILE '.ssh\ssh_personal'
+if ((Test-Path -LiteralPath $key) -or (Test-Path -LiteralPath "$key.pub")) {
+    throw 'Existing key material: review/reuse it, do not overwrite.'
+}
+$null = New-Item -ItemType Directory -Force -Path (Split-Path -Parent $key)
+& $keygen -t ed25519 -f $key -C 'personal-windows'
+if ($LASTEXITCODE -ne 0) { throw 'Key generation failed' }
 ```
 
-Do not append duplicate includes on reruns. The include does not set credential
-helpers, delta, merge GUIs, helper aliases, fsmonitor or the global ignore path.
-It sets Notepad, disables the pager and uses Git builtin aliases plus the commit
-template. Existing conflicting Git keys still take precedence; inspect effective
-`core.editor`, `core.pager`, `interactive.diffFilter`, `merge.tool` and credential
-origins before claiming a dependency-free baseline. Work identities and existing
-ignores stay local; explicitly retain work includes after the baseline include.
-Validate a disposable native repo's commit/editor/diff/merge and credential behavior
-before using a real project. No keys, tokens or credential migrations are automated.
+Choose a passphrase when prompted. For work, repeat with `ssh_work` and a
+`work-windows` comment only if the work profile is enabled and employer policy
+permits that key type. Register **only the `.pub` file** with the corresponding
+account; approve organizational SSO if required. Keep private-key ACLs restricted
+to your user; never relax them to bypass an SSH permissions error. Agent setup
+is optional and not automated: absent a compatible agent, SSH asks for the key's
+passphrase. `IdentitiesOnly` restricts agent use to the selected identity.
+
+### Clone and verify
+
+The initial clone may run before Git has repository metadata to match. Explicitly
+select the work include for that operation (replace the example URL/destination):
+
+```powershell
+git.exe -c "include.path=$env:XDG_CONFIG_HOME/git/windows-work.inc" clone git@github.com:WORK-ORG/REPO.git "$env:USERPROFILE/Work/REPO"
+if ($LASTEXITCODE -ne 0) { throw 'Clone failed' }
+```
+
+Use your configured work folder as the destination. Do not persist a separate
+`core.sshCommand` in each cloned repo: future fetch/push operations use the
+conditional include. Personal clones need no explicit include. From each repo:
+
+```powershell
+git.exe config --show-origin --get user.email
+git.exe config --show-origin --get core.sshCommand
+git.exe var GIT_AUTHOR_IDENT
+git.exe remote -v
+git.exe ls-remote origin
+```
+
+Verify the expected account, repository access and host fingerprint before use.
+Authentication failures are not permission to disable host-key checking or offer
+the other profile's key. Disabling the work profile and reapplying the baseline
+removes its conditional include; any old work include is left unmanaged, not deleted.
+Native Windows OpenSSH/agent/ACL and actual account authentication remain acceptance
+checks; portable tests exercise real Git selection and offline OpenSSH expansion.
 
 ## 5. Terminal launch: manual UI, preserve settings
 
@@ -206,8 +299,9 @@ Test `nu -c` and an explicit `nu --config <config-path> -c <command>` separately
 on the selected version, recording whether config loads and creates the history
 directory. Neither alone proves interactive startup behavior. Recovery remains
 built-in PowerShell; do not modify COMSPEC or pretend the default profile changes SSH/IDE
-interpreters. To roll back, select the prior profile and remove only your added
-include/profile; restore backed-up files manually. Revert XDG only after reviewing
+interpreters. To roll back, select the prior Terminal profile and remove only your
+added profile; restore backed-up files manually. Reconcile chezmoi source ownership
+before reapplying, or the managed Git defaults will return. Revert XDG only after reviewing
 all affected apps and restarting them; never delete runtime data as rollback.
 
 ## Validation and pending gates

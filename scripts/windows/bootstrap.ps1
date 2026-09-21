@@ -79,7 +79,7 @@ foreach ($legacy in @((Join-Path $roamingData 'nushell'), (Join-Path $localData 
     }
 }
 # Refuse known managed paths routed through junctions/symlinks. Read-only, including ancestors.
-foreach ($relative in @('.config\nushell\config.nu', '.config\nushell\env.nu', '.config\git\windows.inc', '.config\mise\windows.toml', '.dotfiles\git\template.txt', '.editorconfig')) {
+foreach ($relative in @('.gitconfig', '.config\nushell\config.nu', '.config\nushell\env.nu', '.config\git\windows.inc', '.config\git\windows-work.inc', '.config\mise\windows.toml', '.dotfiles\git\template.txt', '.editorconfig')) {
     $path = Join-Path $homePath $relative
     while ($path) {
         if (Test-Path -LiteralPath $path) {

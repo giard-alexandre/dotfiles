@@ -47,9 +47,99 @@ not versions, connectivity, credentials or package-manager health. Tools install
 Run the isolated regression check with
 `python3 -m unittest -v tests/test_apply_prerequisites.py`.
 
+# Windows compared with macOS/Linux
+
+**The goal is the same chezmoi-managed experience on every supported platform.**
+If a file or application works natively on Windows, its configuration should also
+be managed there, preferably through shared templates with small platform branches.
+Windows is not intended to remain a separate, minimal, opt-in setup.
+
+**Current status:** Windows is an incremental preview targeting Windows 11 x64.
+The code and portable checks exist, but native installation, PowerShell 5.1,
+interactive sessions and account authentication still need Windows acceptance.
+ARM64 and redirected/nonstandard home layouts are not yet validated.
+The Windows allowlist in [`.chezmoiignore`](.chezmoiignore) is a temporary safety
+boundary: excluded files may be **not yet ported**, rather than unsupported.
+
+## What is different today, and why
+
+| Area | macOS/Linux configuration | Windows configuration | Reason / status |
+| --- | --- | --- | --- |
+| Bootstrap and packages | OS-specific Homebrew/apt/pacman hooks and Unix shell scripts; mise downloaded through a chezmoi external. | Explicit PowerShell bootstrap; WinGet owns Git, chezmoi, Nu, Windows Terminal and mise. | **Platform adaptation:** native package managers, installer scope and exit codes differ. Unix lifecycle scripts are not safe Windows installers. |
+| Applying files vs. installing tools | Chezmoi lifecycle hooks can install packages/tools, including `mise install`. | Normal reviewed apply manages files; package/tool installation is a separate explicit step with consent. | **Current safety policy:** Windows installer/recovery paths are not yet native-validated. File management is automatic; package installation is not a hidden apply side effect. |
+| Interactive shell | Zsh, Oh My Zsh, shell fragments/functions and Starship; Nu configuration also exists. | Minimal native Nushell with history, `ll`/`lla` and the explicit `dev` runner; PowerShell is used for bootstrap/automation. | **Shell choice and pending integration:** Zsh code cannot be sourced into Nu. Native equivalents need individual ports; Starship is not inherently unsupported. No WSL session is required. |
+| Configuration paths | Unix home/XDG conventions and application-specific paths. | User/process `XDG_CONFIG_HOME` is established as `~/.config` before starting applications; Nu history and the isolated mise store use LocalAppData. | **Platform adaptation:** native applications may otherwise discover AppData configurations instead. Existing configurations must be reconciled before changing discovery. `APPDATA` is not globally relocated. |
+| Git file ownership | Chezmoi manages `~/.gitconfig` and the optional work profile. | Chezmoi also manages `~/.gitconfig`; it automatically loads the Windows defaults and conditional work profile. | **Already aligned:** no manual include or activation is required. Both use the supplied personal/work profile data. Review existing `.gitconfig` before replacement; apply does not merge arbitrary local settings. |
+| Git tools and credentials | Vim, delta, DiffMerge and shell helper aliases; `osxkeychain` on macOS, `cache` on Linux. | Notepad, no pager or forced merge GUI, fewer aliases, and no credential-helper override. | **Dependency adaptation plus parity gaps:** do not configure missing programs or replace system Git Credential Manager with Unix's helper. The portable Git settings still omitted are listed below. |
+| SSH account selection | Managed `~/.ssh/config` selects work keys by host patterns; Git commit identity is selected by repository directory. macOS also uses `UseKeychain`. | Git selects both identity and key by repository directory; ordinary `~/.ssh/config` remains unmanaged for now. | **Deliberate Git behavior difference:** personal and work accounts can share the same hostname. Windows uses one explicit identity without inheriting extra SSH identities; `UseKeychain` is macOS-specific. |
+| Mise inventory and execution | Broad shared `conf.d` inventory, mostly `latest`, with Zsh activation and project configuration discovery. Intel Mac fd is pinned separately. | Five pinned tools in `windows.toml`: Neovim, ripgrep, fd, Bun and OMP. Run them through `dev <command>` or the PowerShell runner; no shell activation. | **Current isolation policy, not a mise limitation:** explicit native backends, versions and ownership are reviewed before expansion. The runner ignores global/project mise config and disables automatic installs; normal activation/project workflows remain a parity gap. |
+| Bun and OMP | Mise's Bun backend plus the npm OMP package, installed using Bun. | Mise's core Bun backend plus OMP's native GitHub release backend. | **Supported native alternative:** both remain mise-owned; the standalone OMP executable avoids an npm installation layer on Windows. See [Bun and OMP](#bun-and-omp). |
+| Neovim configuration | The external currently deploys **NvChad**. | Neovim's executable is provisioned, but editor configuration remains unmanaged. | **Explicitly deferred:** the planned Windows LazyVim config collided with Unix external/source ownership. This needs a layout solution, not a claim that Windows cannot run Neovim/LazyVim. |
+| Terminal and desktop integration | Managed terminal/theme configurations and platform-specific desktop helpers. | Windows Terminal with a manually configured Nu profile; optional Alacritty, themes and prompt integrations remain pending. | **Mixed:** macOS desktop helpers cannot simply run on Windows; native terminal configuration is portable work still to do. Terminal JSONC is not rewritten until preservation/recovery is validated. |
+| Other managed files | Broader application configuration, global Git ignores, shared agent instructions/symlinks, CLI/runtime and shell helpers. | Most are still outside the Windows allowlist. | **Unfinished parity work:** verify native paths, dependencies, permissions and symlink/copy behavior before enabling them. They are not all inherently incompatible with Windows. |
+
+### Git is managed by default, but its settings are not yet equivalent
+
+Both platforms configure the supplied name/personal email, a work email when
+enabled, `init.defaultBranch=main`, `core.autocrlf=input`, the commit template and
+some builtin aliases. Windows normalizes the work path and uses case-insensitive
+`gitdir/i` matching; macOS/Linux currently use `gitdir`.
+
+The Windows baseline **does not yet carry over** several portable Unix defaults:
+`pull.rebase`, fetch pruning, push auto-setup/follow-tags, rebase autosquash/autostash,
+rerere, diff algorithm/conflict style, sorting, and several builtin aliases.
+It also does not yet manage/reference the shared `~/.gitignore`.
+These are **parity gaps from the initial minimal baseline**, not Windows
+restrictions or a decision to permanently use different Git behavior.
+Delta, DiffMerge and shell-backed aliases additionally require their dependencies
+or a reviewed native equivalent before being enabled.
+
+Windows does not overwrite system-level Git Credential Manager configuration.
+However, replacing an existing user `.gitconfig` does **not** preserve helper
+declarations or custom includes stored in that file: back it up and reconcile
+needed settings before apply. Credential stores and private keys are not managed.
+
+### Personal/work SSH behavior and its tradeoff
+
+On Windows, repositories under `work_project_folder` use `work_email` and
+`~/.ssh/ssh_work`; all other repositories use the personal email and
+`~/.ssh/ssh_personal`. This works with the same host, such as `github.com`, for both
+accounts. The first work clone can require an explicit work include before Git
+has repository metadata to match; the guide provides the command.
+
+Git's Windows `core.sshCommand` uses `-F none`, `IdentitiesOnly=yes`, one
+`IdentityFile`, and public-key-only authentication. Host-key checking stays enabled.
+**Tradeoff:** Git does not inherit user/system SSH aliases, proxy settings or other
+SSH options; those need explicit reviewed exceptions. Ordinary non-Git SSH is not
+changed. The existing Unix SSH template is left unchanged: it matches work hosts,
+can accumulate work and personal identity entries, and currently disables
+host-key checking for work hosts. Those behaviors are not copied to Windows.
+
+Generate/register machine-local keys explicitly; never commit private keys.
+Windows agent/passphrase handling is not automated. HTTPS remotes still use the
+credential helper, not SSH keys. See the
+[Git profiles and key setup guide](docs/WINDOWS.md#4-git-personalwork-identity-and-ssh-keys).
+
+## Current Windows managed files
+
+- `~/.gitconfig`, `~/.config/git/windows.inc`, and `windows-work.inc` when enabled.
+- `~/.config/nushell/config.nu` and `env.nu`.
+- `~/.config/mise/windows.toml`.
+- `~/.dotfiles/git/template.txt` and `~/.editorconfig`.
+
+The rest of the portability plan is in [the Windows support plan](docs/windows-support-plan.md).
+Use [the Windows guide](docs/WINDOWS.md) for the exact preflight, preview, apply,
+installation and rollback sequence—not the Unix installation one-liner.
+Portable rendering/Git/Nu checks are useful evidence, but they are not native
+Windows installation or SSH-authentication proof.
+
 # Usage
 
 ## Common commands
+
+These are general chezmoi commands. For the current Windows preview, follow the
+guide's preflight and conflict-review steps before apply; do not use `update` or
+`init --apply` as an unattended onboarding shortcut.
 
 ```sh
 # Update the destination directory to match the target state
@@ -101,7 +191,7 @@ not the Unix npm backend. After the explicit Windows provisioning step, use
 
 # High-Level Tools Overview
 
-- zsh: shell of choice.
+- zsh: macOS/Linux interactive shell; Nushell is the Windows interactive shell.
 - [chezmoi](https://www.chezmoi.io/): used to manage these dotfiles and apply updates.
 - [mise](https://mise.jdx.dev/): install and manage multiple devtools versions (think `nvm`, but good and for almost all tools).
 - [alacritty](https://github.com/alacritty/alacritty): terminal emulator of choice.
@@ -113,9 +203,10 @@ not the Unix npm backend. After the explicit Windows provisioning step, use
 
 # TODOS
 
-- [ ] Hanlde Windows installs?
-  - [ ] Krew
-  - [ ] Starship
+- [ ] Complete native Windows acceptance for bootstrap, repeat apply, tools, Git/SSH and Terminal.
+- [ ] Close Windows managed-file and portable Git-setting parity gaps.
+- [ ] Port remaining native mise tools and shell/terminal integrations (including Krew and Starship).
+- [ ] Revisit the explicitly deferred Windows LazyVim configuration.
 
 # Useful Links
 
