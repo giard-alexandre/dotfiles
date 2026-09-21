@@ -10,6 +10,32 @@ the draft; their findings are reconciled below. The first implementation receive
 independent review: READY / OK with notes for a bounded preview only. Native Windows
 execution and release acceptance remain pending.
 
+## Current direction: managed-file parity
+
+Windows should function like the macOS/Linux setup wherever practical. Files
+managed by chezmoi on Unix should also be managed on Windows when their native
+application/path/behavior is supported. Prefer shared templates with targeted
+platform branches, not a parallel opt-in configuration model. The existing
+allowlist is a transitional safety gate while ports are validated, not the final
+scope. Distinguish genuinely unsupported features from unimplemented portable
+ones; the latter remain parity work. Existing explicit decisions such as the
+LazyVim deferral and native validation gates still apply.
+
+This direction supersedes older checkpoints' minimal/manual-opt-in ownership
+choices. Git's root `.gitconfig` is now automatically managed on Windows;
+other portable exclusions must be addressed as subsequent validated ports.
+
+## Windows Git profiles
+
+Personal/work commit identity and SSH key selection now share the repository
+directory rule. The managed root `.gitconfig` loads the personal defaults.
+A case-insensitive conditional work include selects the work email/key. Explicit
+OpenSSH options isolate Git from accumulated user/system SSH identities without
+modifying existing SSH config or disabling host-key checks. Keys remain
+machine-local and manually created/registered. The guide covers first clone,
+config precedence and existing SSH proxy/alias exceptions. This supersedes the
+personal-only and opt-in baselines in older checkpoints; native authentication remains pending.
+
 ## Bun and OMP expansion
 
 The current Windows inventory adds `core:bun@1.4.2` and
@@ -402,7 +428,7 @@ upgrade regeneration where relevant, and macOS/Linux regression tests.
 | Unix Nu autoload/completion paths | Exclude Windows targets; generate native integrations later |
 | Starship config | Portable later, with explicit lookup and optional glyph support |
 | Alacritty config/imports/keybindings | Adapt native paths, Nu startup and opener later |
-| Git config/work identity/ignore/commit template | Implemented opt-in Git include and template; global credentials/work/ignore remain local and unmanaged |
+| Git config/work identity/ignore/commit template | Root `.gitconfig`, personal/work identity/key includes and commit template managed; global ignore/integration parity pending; credential stores and private keys stay local |
 | SSH config and placeholders | Later: native OpenSSH, ACL and policy validation; no key copying |
 | Shared agent instructions | Portable content; ordinary-file discovery copies later |
 | Existing agent symlinks | Exclude initially; no Developer Mode prerequisite |
@@ -564,9 +590,9 @@ fresh Terminal and from standalone PowerShell. Keep bootstrap Nu/Git paths stabl
 
 ### Windows Git baseline
 
-- Implemented Windows choice: leave global `.gitconfig` unmanaged and supply a
-  manually enabled `.config/git/windows.inc`. It has no `[credential]` stanza;
-  never override installed GCM with cache.
+- Windows `.gitconfig` is managed automatically and loads `.config/git/windows.inc`
+  with conditional work identity/key selection. There is no manual opt-in step.
+  No `[credential]` stanza is supplied; never override installed system GCM with cache.
 - Preserve existing credential configuration, including user-level settings during
   target conflict resolution. Merely omitting a stanza from a replacement global
   file does not preserve arbitrary pre-existing global-file content.

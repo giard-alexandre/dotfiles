@@ -16,19 +16,22 @@ tests/**
 {{ template "windows-xdg-check" . }}
 # Deliberate native Windows allowlist, including parent directories.
 **
+!.gitconfig
 !.config/
 !.config/nushell/
 !.config/nushell/config.nu
 !.config/nushell/env.nu
 !.config/git/
 !.config/git/windows.inc
+{{ if .has_work_profile -}}
+!.config/git/windows-work.inc
+{{ end -}}
 !.config/mise/
 !.config/mise/windows.toml
 !.dotfiles/
 !.dotfiles/git/
 !.dotfiles/git/template.txt
 !.editorconfig
-# Existing .gitconfig and credentials remain completely unmanaged on Windows.
 {{ else -}}
 .config/git/
 .config/git/**

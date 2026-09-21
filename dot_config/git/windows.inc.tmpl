@@ -1,5 +1,5 @@
-# Opt-in include; never replaces ~/.gitconfig or its credential settings.
-# Review identities and precedence before following docs/WINDOWS.md.
+# Windows defaults, loaded automatically by the managed ~/.gitconfig.
+# Review existing settings before applying; see docs/WINDOWS.md.
 [user]
     email = {{ .personal_email | quote }}
     name = {{ .full_name | quote }}
@@ -7,6 +7,9 @@
     editor = notepad.exe
     pager = ""
     autocrlf = input
+    # Isolate identities from ~/.ssh/config and system SSH configuration.
+    # IdentityFile via -o retains the selection even when the key is missing.
+    sshCommand = "ssh -F none -o IdentitiesOnly=yes -o IdentityFile=~/.ssh/ssh_personal -o PreferredAuthentications=publickey"
 [init]
     defaultBranch = main
 [alias]
@@ -15,3 +18,8 @@
     lt = log --tags --decorate --simplify-by-decoration --oneline
 [commit]
     template = ~/.dotfiles/git/template.txt
+{{ if .has_work_profile -}}
+{{ $workDir := .work_project_folder | replace "\\" "/" | trimSuffix "/" | replace "[" "\\[" | replace "]" "\\]" -}}
+[includeIf {{ printf "gitdir/i:%s/" $workDir | quote }}]
+    path = windows-work.inc
+{{ end -}}

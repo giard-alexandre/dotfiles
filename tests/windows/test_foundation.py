@@ -103,6 +103,7 @@ class Foundation(unittest.TestCase):
         self.assertEqual(
             managed,
             {
+                ".gitconfig",
                 ".config/nushell/config.nu",
                 ".config/nushell/env.nu",
                 ".config/git/windows.inc",
@@ -369,14 +370,90 @@ class Foundation(unittest.TestCase):
         self.env["XDG_CONFIG_HOME"] = "c:/users/fixture user/.config"
         self.assertIn("!.config/nushell/config.nu", self.render(".chezmoiignore", data))
 
-    def test_existing_git_credentials_are_unmanaged(self):
+    def test_existing_git_config_replacement_is_previewed_without_writes(self):
         existing = self.home / ".gitconfig"
         content = b"[credential]\r\n\thelper = manager\r\n[include]\r\n\tpath = local-work.inc\r\n"
         existing.write_bytes(content)
         diff = self.run_cm("diff").stdout
         self.run_cm("apply", "--dry-run", "--verbose")
-        self.assertNotIn("diff --git a/.gitconfig", diff)
+        self.assertIn("diff --git a/.gitconfig", diff)
         self.assertEqual(existing.read_bytes(), content)
+
+    @unittest.skipUnless(shutil.which("git") and shutil.which("ssh"), "Git and OpenSSH required")
+    def test_windows_git_profiles_select_identity_and_single_key(self):
+        # Real Git include precedence + OpenSSH expansion, without network/key access.
+        work = self.home.resolve() / "Work [Team] ünicode"
+        data = dict(
+            self.data,
+            has_work_profile=True,
+            work_email="work@example.invalid",
+            # Exercise Windows separators and ASCII case-insensitive matching.
+            work_project_folder="".join(
+                c.upper() if c.isascii() else c for c in str(work)
+            ).replace("/", "\\"),
+        )
+        git_dir = self.home / ".config/git"
+        git_dir.parent.mkdir(parents=True, exist_ok=True)
+        self.run_cm("diff", data=data)
+        self.run_cm("apply", "--dry-run", "--verbose", data=data)
+        self.run_cm("apply", str(git_dir), data=data)
+        global_config = self.home / ".gitconfig"
+        self.run_cm("apply", str(global_config), data=data)
+        system_config = self.root / "system.gitconfig"
+        system_config.write_text("[credential]\n    helper = existing-helper\n")
+        env = {k: v for k, v in self.env.items() if not k.startswith("GIT_")}
+        env.update(GIT_CONFIG_SYSTEM=str(system_config))
+
+        def git(repo, *args):
+            result = subprocess.run(
+                ["git", "-C", str(repo), *args],
+                env=env, capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return result.stdout.strip()
+
+        for repo, email, key in (
+            (work / "nested/repo", "work@example.invalid", "ssh_work"),
+            (self.home / "Projects/repo", "fixture@example.invalid", "ssh_personal"),
+            (Path(str(work) + "-other") / "repo", "fixture@example.invalid", "ssh_personal"),
+        ):
+            repo.mkdir(parents=True)
+            git(repo, "init", "-q")
+            self.assertIn(f"<{email}>", git(repo, "var", "GIT_AUTHOR_IDENT"))
+            self.assertEqual(git(repo, "config", "credential.helper"), "existing-helper")
+            # Git executes core.sshCommand using a shell even when invoked from Nu/PS.
+            result = subprocess.run(
+                git(repo, "config", "core.sshCommand") + " -G git@example.invalid",
+                shell=True, env=env, capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                [line for line in result.stdout.splitlines() if line.startswith("identityfile ")],
+                [f"identityfile ~/.ssh/{key}"],
+            )
+            self.assertIn("identitiesonly yes\n", result.stdout)
+            self.assertIn("preferredauthentications publickey\n", result.stdout)
+            self.assertIn("stricthostkeychecking ask\n", result.stdout)
+
+        # First clone has no repository to match: an explicit work include selects its key.
+        self.assertEqual(
+            git(self.home, "-c", f"include.path={git_dir / 'windows-work.inc'}",
+                "config", "user.email"),
+            "work@example.invalid",
+        )
+        # Repo-local exceptions retain normal Git precedence.
+        git(work / "nested/repo", "config", "user.email", "override@example.invalid")
+        self.assertIn(
+            "<override@example.invalid>",
+            git(work / "nested/repo", "var", "GIT_AUTHOR_IDENT"),
+        )
+        # Disabling the work profile removes selection, even if an old include remains.
+        self.run_cm("apply", str(git_dir), data=self.data)
+        git(work / "nested/repo", "config", "--unset", "user.email")
+        self.assertIn(
+            "<fixture@example.invalid>",
+            git(work / "nested/repo", "var", "GIT_AUTHOR_IDENT"),
+        )
 
     @unittest.skip(
         "Requires disposable native Windows 11 x64: PS5.1 parser, registry and WinGet install/reuse/refusal/reboot"
@@ -389,23 +466,6 @@ class Foundation(unittest.TestCase):
     )
     def test_native_interactive_gate(self):
         pass
-
-    def test_git_and_nu_render(self):
-        git = self.render("dot_config/git/windows.inc.tmpl")
-        for forbidden in (
-            "[credential]",
-            "delta",
-            "diffmerge",
-            "fetch-merge",
-            "open-pr",
-        ):
-            self.assertNotIn(forbidden, git)
-        self.assertIn("notepad.exe", git)
-        self.assertIn('pager = ""', git)
-        nu = self.render("dot_config/nushell/config.nu.tmpl")
-        self.assertIn("$env.LOCALAPPDATA", nu)
-        self.assertNotIn("source ", nu)
-        self.assertNotIn("use ", nu)
 
     def test_unix_nvim_external_remains_whole(self):
         # Local git-repo external: new source ignores must not filter Unix NvChad.

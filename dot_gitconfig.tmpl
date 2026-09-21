@@ -1,3 +1,7 @@
+{{ if eq .chezmoi.os "windows" -}}
+[include]
+    path = ~/.config/git/windows.inc
+{{ else -}}
 [user]
 	email = {{ .personal_email | quote }}
 	name = {{ .full_name | quote }}
@@ -100,3 +104,4 @@
 	side-by-side = false
 	hyperlinks = true
 	hyperlinks-file-link-format = "file-line://{path}:{line}"
+{{ end -}}
