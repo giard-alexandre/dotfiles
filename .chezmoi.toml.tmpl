@@ -1,3 +1,4 @@
+{{- includeTemplate "apply-prerequisites" . -}}
 {{- $fullName := promptStringOnce . "fullName" "Full Name" -}}
 {{- $personalEmail := promptStringOnce . "personalEmail" "Your personal email address" -}}
 {{- $personalProjectFolder := promptStringOnce . "personalProjectFolder" "Personal Projects Folder (relative to home) (`c` will cd you there)" -}}
