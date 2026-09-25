@@ -1,5 +1,8 @@
+{{- includeTemplate "apply-prerequisites" . -}}
 LICENSE
 README.MD
 AGENTS.md
 
 docs/
+tests/
+tests/**

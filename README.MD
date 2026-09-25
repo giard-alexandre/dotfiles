@@ -23,6 +23,19 @@ I recommend forking the repo into your own `dotfiles` repo and then using the be
 sh -c "$(curl -fsLS get.chezmoi.io)" -- -b $HOME/.local/bin init --apply $GITHUB_USERNAME
 ```
 
+After the source is available, the config template checks for required programs
+before the first questionnaire; a remote `init` needs Git earlier, to clone the
+source. Subsequent `chezmoi apply` runs perform the same
+check before changing files. A missing prerequisite stops with a list to install:
+Git for source/Git externals, `/bin/bash` for lifecycle scripts, curl for the
+macOS Homebrew bootstrap, and apt or pacman (plus sudo for non-root users) on
+the corresponding Linux distribution. This checks executable availability,
+not versions, connectivity, credentials or package-manager health. Tools installed
+*by* the apply scripts (such as zsh, Starship and mise) are not preconditions.
+
+Run the isolated regression check with
+`python3 -m unittest -v tests/test_apply_prerequisites.py`.
+
 # Usage
 ## Common commands
 ```sh

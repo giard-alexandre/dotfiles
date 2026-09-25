@@ -1,0 +1,28 @@
+{{- $missing := list -}}
+{{- if not (lookPath "git") -}}
+{{- $missing = append $missing "git (source checkout and Git externals)" -}}
+{{- end -}}
+{{- if and (or (eq .chezmoi.os "darwin") (eq .chezmoi.os "linux")) (not (stat "/bin/bash")) -}}
+{{- $missing = append $missing "/bin/bash (lifecycle scripts)" -}}
+{{- end -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{- if not (lookPath "curl") -}}
+{{- $missing = append $missing "curl (Homebrew bootstrap)" -}}
+{{- end -}}
+{{- else if eq .chezmoi.os "linux" -}}
+{{- if and (ne .chezmoi.username "root") (not (lookPath "sudo")) -}}
+{{- $missing = append $missing "sudo (non-root package provisioning)" -}}
+{{- end -}}
+{{- if or (eq .chezmoi.osRelease.id "debian") (eq .chezmoi.osRelease.id "ubuntu") -}}
+{{- if not (lookPath "apt") -}}
+{{- $missing = append $missing "apt (package provisioning)" -}}
+{{- end -}}
+{{- else if eq .chezmoi.osRelease.id "arch" -}}
+{{- if not (lookPath "pacman") -}}
+{{- $missing = append $missing "pacman (package provisioning)" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if $missing -}}
+{{- fail (printf "Cannot apply dotfiles: missing prerequisites: %s. Install them before running chezmoi init/apply." (join ", " $missing)) -}}
+{{- end -}}
