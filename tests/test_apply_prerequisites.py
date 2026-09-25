@@ -28,6 +28,7 @@ class ApplyPrerequisites(unittest.TestCase):
             ".chezmoi.toml.tmpl",
             ".chezmoiignore",
             ".chezmoitemplates/apply-prerequisites",
+            ".chezmoitemplates/windows-xdg-check",
         ):
             target = self.source / relative
             target.write_bytes((REPO / relative).read_bytes())
@@ -37,6 +38,7 @@ class ApplyPrerequisites(unittest.TestCase):
         self.bin_dir = self.root / "bin"
         self.bin_dir.mkdir()
         self.env = dict(os.environ, HOME=str(self.home), PATH=str(self.bin_dir))
+        self.env["XDG_CONFIG_HOME"] = str(self.home / ".config")
         self.args = [
             CHEZMOI,
             "--source", str(self.source),
@@ -124,6 +126,55 @@ class ApplyPrerequisites(unittest.TestCase):
         applied = self.run_cm("apply")
         self.assertEqual(applied.returncode, 0, applied.stderr)
         self.assertEqual((self.home / ".marker").read_text(), "applied\n")
+
+
+    @unittest.skipUnless(shutil.which("git"), "Git required to exercise successful init")
+    def test_windows_winget_blocks_init_template_and_apply_before_writing(self):
+        (self.source / "dot_editorconfig").write_text("windows preflight marker\n")
+        windows = json.dumps({"chezmoi": {"os": "windows", "arch": "amd64"}})
+        init_template = (
+            "--override-data", windows, "execute-template", "--init",
+            "--file", str(self.source / ".chezmoi.toml.tmpl"),
+        )
+
+        missing_both = self.run_cm(*init_template)
+        self.assertNotEqual(missing_both.returncode, 0)
+        self.assertIn("git (source checkout and Git externals)", missing_both.stderr)
+        self.assertIn("winget.exe (Windows package provisioning)", missing_both.stderr)
+
+        self.make_available("git", shutil.which("git"))
+        missing_init = self.run_cm(*init_template)
+        self.assertNotEqual(missing_init.returncode, 0)
+        self.assertIn("winget.exe (Windows package provisioning)", missing_init.stderr)
+        self.assertNotIn("Full Name?", missing_init.stdout + missing_init.stderr)
+        self.assertFalse((self.root / "config.toml").exists())
+
+        self.make_available("winget.exe")
+        ready = json.dumps({
+            "chezmoi": {"os": "windows", "arch": "amd64"},
+            "fullName": "Fixture User",
+            "personalEmail": "fixture@example.invalid",
+            "personalProjectFolder": "Projects",
+            "hasWorkProfile": False,
+            "has_work_profile": False,
+        })
+        initialized = self.run_cm(
+            "--override-data", ready, "execute-template", "--init",
+            "--file", str(self.source / ".chezmoi.toml.tmpl"),
+        )
+        self.assertEqual(initialized.returncode, 0, initialized.stderr)
+        self.assertIn("Fixture User", initialized.stdout)
+
+        (self.bin_dir / "winget.exe").unlink()
+        missing_apply = self.run_cm("--override-data", ready, "apply")
+        self.assertNotEqual(missing_apply.returncode, 0)
+        self.assertIn("winget.exe (Windows package provisioning)", missing_apply.stderr)
+        self.assertFalse((self.home / ".editorconfig").exists())
+
+        self.make_available("winget.exe")
+        applied = self.run_cm("--override-data", ready, "apply")
+        self.assertEqual(applied.returncode, 0, applied.stderr)
+        self.assertEqual((self.home / ".editorconfig").read_text(), "windows preflight marker\n")
 
 
 if __name__ == "__main__":

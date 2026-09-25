@@ -36,16 +36,19 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- -b $HOME/.local/bin init --apply $GITHUB
 
 After the source is available, the config template checks for required programs
 before the first questionnaire; a remote `init` needs Git earlier, to clone the
-source. Subsequent `chezmoi apply` runs perform the same
-check before changing files. A missing prerequisite stops with a list to install:
-Git for source/Git externals, `/bin/bash` for lifecycle scripts, curl for the
-macOS Homebrew bootstrap, and apt or pacman (plus sudo for non-root users) on
-the corresponding Linux distribution. This checks executable availability,
-not versions, connectivity, credentials or package-manager health. Tools installed
-*by* the apply scripts (such as zsh, Starship and mise) are not preconditions.
+source. Subsequent `chezmoi apply` runs perform the same check before changing
+files. A missing prerequisite stops with a list to install: Git for source/Git
+externals; `/bin/bash` for Unix lifecycle scripts; curl for macOS Homebrew; apt
+or pacman (plus sudo for non-root users) on the corresponding Linux distribution;
+and `winget.exe` for Windows package provisioning. This checks executable
+availability, not versions, connectivity, credentials or package-manager health.
+The Windows PowerShell preflight also checks core tools, OS and account safety;
+template checks do not replace it. Tools installed *by* Unix apply scripts
+(such as zsh, Starship and mise) are not preconditions.
 
-Run the isolated regression check with
-`python3 -m unittest -v tests/test_apply_prerequisites.py`.
+Run the isolated regression checks with
+`python3 -B -m unittest -v tests/test_apply_prerequisites.py` and
+`python3 -B tests/windows/test_foundation.py`.
 
 # Windows compared with macOS/Linux
 
