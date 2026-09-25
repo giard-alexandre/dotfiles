@@ -22,6 +22,10 @@
 {{- $missing = append $missing "pacman (package provisioning)" -}}
 {{- end -}}
 {{- end -}}
+{{- else if eq .chezmoi.os "windows" -}}
+{{- if not (lookPath "winget.exe") -}}
+{{- $missing = append $missing "winget.exe (Windows package provisioning)" -}}
+{{- end -}}
 {{- end -}}
 {{- if $missing -}}
 {{- fail (printf "Cannot apply dotfiles: missing prerequisites: %s. Install them before running chezmoi init/apply." (join ", " $missing)) -}}

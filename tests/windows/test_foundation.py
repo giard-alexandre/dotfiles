@@ -40,6 +40,13 @@ class Foundation(unittest.TestCase):
             XDG_DATA_HOME=str(self.root / "xdg-data"),
             XDG_STATE_HOME=str(self.root / "xdg-state"),
         )
+        preflight_bin = self.root / "preflight-bin"
+        preflight_bin.mkdir()
+        for name in ("winget.exe", "apt", "sudo"):
+            prerequisite = preflight_bin / name
+            prerequisite.write_text("fixture\n")
+            prerequisite.chmod(0o755)
+        self.env["PATH"] = str(preflight_bin) + os.pathsep + self.env["PATH"]
         self.data = {
             "full_name": "Fixture User",
             "personal_email": "fixture@example.invalid",
@@ -520,9 +527,9 @@ class Foundation(unittest.TestCase):
             GIT_CONFIG_KEY_0="url." + str(remote) + ".insteadOf",
             GIT_CONFIG_VALUE_0="https://github.com/NvChad/NvChad.git",
         )
-        # Keep only the ignore boundary and source nvim directory if one exists.
+        # Keep the ignore boundary, its prerequisite template, and nvim source.
         for entry in self.source.iterdir():
-            if entry.name not in (".chezmoiignore", "dot_config"):
+            if entry.name not in (".chezmoiignore", ".chezmoitemplates", "dot_config"):
                 shutil.rmtree(entry) if entry.is_dir() else entry.unlink()
         for entry in (self.source / "dot_config").iterdir():
             if entry.name != "nvim":

@@ -150,10 +150,13 @@ chezmoi.exe --source $source --config $config apply --dry-run --verbose
 if ($LASTEXITCODE -ne 0) { throw 'repeat dry-run failed' }
 ```
 
-Template-time XDG/destination/architecture guards also reject unsafe Windows target
-rendering, including full and targeted dry-runs. They do **not** replace the native
-preflight's registry/reparse-point checks or conflict review. Chezmoi may initialize
-its own cache/state even in a dry-run; no zero-internal-writes guarantee is made.
+Template-time prerequisite checks require `git` and `winget.exe` on PATH before
+the first init questionnaire and again before each apply; missing tools stop before
+target files are written. XDG/destination/architecture guards also reject unsafe
+Windows target rendering, including full and targeted dry-runs. These availability
+checks do **not** replace the native preflight's version, registry, core-tool and
+reparse-point checks or conflict review. Chezmoi may initialize its own cache/state
+even in a dry-run; no zero-internal-writes guarantee is made.
 Do not customize the destination or bypass the normal source ignore/template flow.
 
 ## 4. Git: personal/work identity and SSH keys
