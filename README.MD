@@ -86,6 +86,7 @@ mise upgrade bun 'npm:@oh-my-pi/pi-coding-agent'
 - [chezmoi](https://www.chezmoi.io/): used to manage these dotfiles and apply updates.
 - [mise](https://mise.jdx.dev/): install and manage multiple devtools versions (think `nvm`, but good and for almost all tools).
 - [alacritty](https://github.com/alacritty/alacritty): terminal emulator of choice.
+- [Ghostty](https://ghostty.org/): terminal configured with the One Double Dark theme in `~/.config/ghostty/theme.config`.
 - [krew](https://krew.sigs.k8s.io/): kubectl plugins manager.
 - [k9s](https://k9scli.io/): kubectl TUI.
 - [bat](https://github.com/sharkdp/bat): cat but modern.
