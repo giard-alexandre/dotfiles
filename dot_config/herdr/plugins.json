@@ -1,0 +1,524 @@
+[
+  {
+    "plugin_id": "chmarax.gitview",
+    "name": "gitview",
+    "version": "0.1.0",
+    "min_herdr_version": "0.7.0",
+    "description": "Two-pane git view: changed files + diff, Enter opens nvim",
+    "manifest_path": "\\\\?\\C:\\Users\\agiard\\.config\\herdr\\plugins\\github\\chmarax.gitview-57cd0959dba0\\herdr-plugin.toml",
+    "plugin_root": "\\\\?\\C:\\Users\\agiard\\.config\\herdr\\plugins\\github\\chmarax.gitview-57cd0959dba0",
+    "enabled": true,
+    "platforms": [
+      "macos",
+      "linux"
+    ],
+    "build": [
+      {
+        "command": [
+          "bash",
+          "herdr/install.sh"
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "toggle",
+        "title": "gitview: toggle sidebar",
+        "contexts": [
+          "pane",
+          "workspace"
+        ],
+        "command": [
+          "sh",
+          "-c",
+          "exec sh \"$HERDR_PLUGIN_ROOT/herdr/run.sh\" toggle"
+        ]
+      },
+      {
+        "id": "toggle-tab",
+        "title": "gitview: toggle in own tab",
+        "contexts": [
+          "pane",
+          "workspace"
+        ],
+        "command": [
+          "sh",
+          "-c",
+          "exec sh \"$HERDR_PLUGIN_ROOT/herdr/run.sh\" toggle-tab"
+        ]
+      }
+    ],
+    "panes": [
+      {
+        "id": "ask",
+        "title": "gitview: confirm",
+        "placement": "overlay",
+        "command": [
+          "sh",
+          "-c",
+          "exec sh \"$HERDR_PLUGIN_ROOT/herdr/run.sh\" ask"
+        ]
+      },
+      {
+        "id": "list",
+        "title": "gitview: files",
+        "placement": "split",
+        "command": [
+          "sh",
+          "-c",
+          "exec sh \"$HERDR_PLUGIN_ROOT/herdr/run.sh\" list"
+        ]
+      },
+      {
+        "id": "pick-agent",
+        "title": "gitview: send to agent",
+        "placement": "overlay",
+        "command": [
+          "sh",
+          "-c",
+          "exec sh \"$HERDR_PLUGIN_ROOT/herdr/run.sh\" pick-agent"
+        ]
+      },
+      {
+        "id": "preview",
+        "title": "gitview: diff",
+        "placement": "split",
+        "command": [
+          "sh",
+          "-c",
+          "exec sh \"$HERDR_PLUGIN_ROOT/herdr/run.sh\" preview"
+        ]
+      }
+    ],
+    "source": {
+      "kind": "github",
+      "owner": "ChmaraX",
+      "repo": "herdr-gitview",
+      "resolved_commit": "54b31d11a21a3c6691404f74221d533470e8c3b1",
+      "managed_path": "C:\\Users\\agiard\\.config\\herdr\\plugins\\github\\chmarax.gitview-57cd0959dba0",
+      "installed_unix_ms": 1788446815557
+    }
+  },
+  {
+    "plugin_id": "ez-corp.git-status",
+    "name": "Git Status",
+    "version": "1.5.0",
+    "min_herdr_version": "0.7.5",
+    "description": "Git working-tree status (staged/modified/untracked, ✓ when clean) per space.",
+    "manifest_path": "\\\\?\\C:\\Users\\agiard\\.config\\herdr\\plugins\\github\\ez-corp.git-status-ea1130cc59c6\\herdr-plugin.toml",
+    "plugin_root": "\\\\?\\C:\\Users\\agiard\\.config\\herdr\\plugins\\github\\ez-corp.git-status-ea1130cc59c6",
+    "enabled": true,
+    "platforms": [
+      "linux",
+      "macos",
+      "windows"
+    ],
+    "build": [
+      {
+        "command": [
+          "cargo",
+          "build",
+          "--release"
+        ]
+      }
+    ],
+    "startup": [
+      {
+        "command": [
+          "./target/release/git-status",
+          "--restore"
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "report",
+        "title": "Git status report",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "./target/release/git-status",
+          "--once"
+        ]
+      },
+      {
+        "id": "status-disable",
+        "title": "Disable git status updater",
+        "command": [
+          "./target/release/git-status",
+          "--disable"
+        ]
+      },
+      {
+        "id": "status-enable",
+        "title": "Enable git status updater",
+        "command": [
+          "./target/release/git-status",
+          "--enable"
+        ]
+      },
+      {
+        "id": "status-toggle",
+        "title": "Toggle git status updater",
+        "command": [
+          "./target/release/git-status",
+          "--toggle"
+        ]
+      }
+    ],
+    "panes": [
+      {
+        "id": "dashboard",
+        "title": "Git status",
+        "placement": "overlay",
+        "command": [
+          "./target/release/git-status",
+          "--interval",
+          "3"
+        ]
+      }
+    ],
+    "source": {
+      "kind": "github",
+      "owner": "ezcorp-org",
+      "repo": "herdr-git-status",
+      "resolved_commit": "f144c8dac2860e344b6b379d2bcfee229dcf10ad",
+      "managed_path": "C:\\Users\\agiard\\.config\\herdr\\plugins\\github\\ez-corp.git-status-ea1130cc59c6",
+      "installed_unix_ms": 1788447622060
+    }
+  },
+  {
+    "plugin_id": "ntindle.herdr-resurrect",
+    "name": "herdr-resurrect",
+    "version": "0.2.0",
+    "min_herdr_version": "0.7.0",
+    "description": "tmux-resurrect for herdr: snapshot the whole herd (workspaces, tabs, panes, cwd, running programs, agents) and bring it back after a crash or reboot.",
+    "manifest_path": "\\\\?\\C:\\Users\\agiard\\.config\\herdr\\plugins\\github\\ntindle.herdr-resurrect-6e4571261caf\\herdr-plugin.toml",
+    "plugin_root": "\\\\?\\C:\\Users\\agiard\\.config\\herdr\\plugins\\github\\ntindle.herdr-resurrect-6e4571261caf",
+    "enabled": true,
+    "platforms": [
+      "linux",
+      "macos",
+      "windows"
+    ],
+    "actions": [
+      {
+        "id": "restore",
+        "title": "Resurrect: restore last snapshot",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "node",
+          "bin/restore.js"
+        ]
+      },
+      {
+        "id": "restore-preview",
+        "title": "Resurrect: preview restore (dry run)",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "node",
+          "bin/restore.js",
+          "--dry-run"
+        ]
+      },
+      {
+        "id": "save",
+        "title": "Resurrect: save snapshot",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "node",
+          "bin/save.js"
+        ]
+      },
+      {
+        "id": "snapshots",
+        "title": "Resurrect: list snapshots",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "node",
+          "bin/list.js"
+        ]
+      }
+    ],
+    "events": [
+      {
+        "on": "pane.agent_detected",
+        "command": [
+          "node",
+          "bin/on-event.js"
+        ]
+      },
+      {
+        "on": "pane.closed",
+        "command": [
+          "node",
+          "bin/on-event.js"
+        ]
+      },
+      {
+        "on": "pane.created",
+        "command": [
+          "node",
+          "bin/on-event.js"
+        ]
+      },
+      {
+        "on": "pane.exited",
+        "command": [
+          "node",
+          "bin/on-event.js"
+        ]
+      },
+      {
+        "on": "workspace.closed",
+        "command": [
+          "node",
+          "bin/on-event.js"
+        ]
+      },
+      {
+        "on": "workspace.created",
+        "command": [
+          "node",
+          "bin/on-event.js"
+        ]
+      }
+    ],
+    "panes": [
+      {
+        "id": "autosave",
+        "title": "resurrect autosave",
+        "placement": "split",
+        "command": [
+          "node",
+          "bin/autosave.js"
+        ]
+      }
+    ],
+    "source": {
+      "kind": "github",
+      "owner": "ntindle",
+      "repo": "herdr-resurrect",
+      "resolved_commit": "461e866cc772e156e39b94d085701972e24761af",
+      "managed_path": "C:\\Users\\agiard\\.config\\herdr\\plugins\\github\\ntindle.herdr-resurrect-6e4571261caf",
+      "installed_unix_ms": 1787260497306
+    }
+  },
+  {
+    "plugin_id": "ray.plugin-manager",
+    "name": "Plugin Manager",
+    "version": "0.5.0",
+    "min_herdr_version": "0.7.4",
+    "description": "Manage herdr plugins from a popup: list, install, update, enable/disable, uninstall, browse the marketplace, open repo in browser, edit plugins.json",
+    "manifest_path": "\\\\?\\C:\\Users\\agiard\\.config\\herdr\\plugins\\github\\ray.plugin-manager-75f462e8e1d0\\herdr-plugin.toml",
+    "plugin_root": "C:\\Users\\agiard\\.config\\herdr\\plugins\\github\\ray.plugin-manager-75f462e8e1d0",
+    "enabled": true,
+    "platforms": [
+      "macos",
+      "linux"
+    ],
+    "actions": [
+      {
+        "id": "open",
+        "title": "Open plugin manager",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "bash",
+          "-c",
+          "exec \"${HERDR_BIN_PATH:-herdr}\" plugin pane open --plugin ray.plugin-manager --entrypoint manager --placement popup --focus"
+        ]
+      }
+    ],
+    "panes": [
+      {
+        "id": "manager",
+        "title": "Plugin Manager",
+        "placement": "popup",
+        "width": 82,
+        "height": 28,
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/bin/manager.sh\""
+        ]
+      }
+    ],
+    "source": {
+      "kind": "github",
+      "owner": "speardragon",
+      "repo": "herdr-plugin-manager",
+      "resolved_commit": "e4fef2693728a36cbb389af033a389cad2257869",
+      "managed_path": "C:\\Users\\agiard\\.config\\herdr\\plugins\\github\\ray.plugin-manager-75f462e8e1d0",
+      "installed_unix_ms": 1790020319429
+    }
+  },
+  {
+    "plugin_id": "worktrunk",
+    "name": "Worktrunk",
+    "version": "0.1.0",
+    "min_herdr_version": "0.7.0",
+    "description": "Switch, create, remove, or merge git worktrees via worktrunk",
+    "manifest_path": "/Users/agiard/.config/herdr/plugins/github/worktrunk-7fb519583f31/herdr-plugin.toml",
+    "plugin_root": "/Users/agiard/.config/herdr/plugins/github/worktrunk-7fb519583f31",
+    "enabled": true,
+    "platforms": [
+      "macos",
+      "linux"
+    ],
+    "actions": [
+      {
+        "id": "merge",
+        "title": "Worktree: merge into the target branch",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/open.sh\" merger"
+        ]
+      },
+      {
+        "id": "merge-no-squash",
+        "title": "Worktree: merge into the target branch, keeping every commit",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/open.sh\" merger-no-squash"
+        ]
+      },
+      {
+        "id": "open",
+        "title": "Worktree: switch / create from default branch",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/open.sh\" picker-default"
+        ]
+      },
+      {
+        "id": "open-current",
+        "title": "Worktree: switch / create from current branch",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/open.sh\" picker-current"
+        ]
+      },
+      {
+        "id": "open-with-remotes",
+        "title": "Worktree: switch / create from local or remote branches",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/open.sh\" picker-with-remotes"
+        ]
+      },
+      {
+        "id": "remove",
+        "title": "Worktree: remove",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/open.sh\" remover"
+        ]
+      }
+    ],
+    "panes": [
+      {
+        "id": "merger",
+        "title": "Worktrunk — merge",
+        "placement": "split",
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/merge.sh\""
+        ]
+      },
+      {
+        "id": "merger-no-squash",
+        "title": "Worktrunk — merge (no squash)",
+        "placement": "split",
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/merge.sh\" --no-squash"
+        ]
+      },
+      {
+        "id": "picker-current",
+        "title": "Worktrunk — current branch",
+        "placement": "split",
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/picker.sh\" --create-base=current"
+        ]
+      },
+      {
+        "id": "picker-default",
+        "title": "Worktrunk — default branch",
+        "placement": "split",
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/picker.sh\" --create-base=default"
+        ]
+      },
+      {
+        "id": "picker-with-remotes",
+        "title": "Worktrunk — local and remote branches",
+        "placement": "split",
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/picker.sh\" --show-with-remotes"
+        ]
+      },
+      {
+        "id": "remover",
+        "title": "Worktrunk — remove",
+        "placement": "split",
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/remove.sh\""
+        ]
+      }
+    ],
+    "source": {
+      "kind": "github",
+      "owner": "devashish2203",
+      "repo": "herdr-worktrunk",
+      "resolved_commit": "8ceca541de8fb0d6006727e172534e1e2af17224",
+      "managed_path": "/Users/agiard/.config/herdr/plugins/github/worktrunk-7fb519583f31",
+      "installed_unix_ms": 1790622759405
+    }
+  }
+]

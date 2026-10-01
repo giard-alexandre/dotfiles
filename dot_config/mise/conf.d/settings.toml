@@ -1,7 +1,7 @@
 [settings]
 # plugins can read the versions files used by other version managers (if enabled by the plugin)
 # for example, .nvmrc in the case of node's nvm
-legacy_version_file = true                     # enabled by default (unlike asdf)
+idiomatic_version_file_enable_tools = ["dotnet", "python"]
 
 # configure `mise install` to always keep the downloaded archive
 always_keep_download = false        # deleted after install by default
@@ -20,6 +20,8 @@ raw = false         # set to true to directly pipe plugins to stdin/stdout/stder
 disable_default_registry = false # disable the default shorthands, see `MISE_DISABLE_DEFAULT_REGISTRY`
 
 experimental = false # enable experimental features
+
+minimum_release_age = "7d"
 
 [settings.npm]
 package_manager = "bun"
