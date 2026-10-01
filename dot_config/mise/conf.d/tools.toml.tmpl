@@ -15,14 +15,17 @@ ripgrep = 'latest'
 rtk = 'latest'
 worktrunk = 'latest'
 "npm:@oh-my-pi/pi-coding-agent" = 'latest'
+herdr = 'latest'
 
 # Languages
 bun = 'latest'
-node = 'latest'
+dotnet = ['10', 'latest']
 go = 'latest'
 go-jsonnet = 'latest'
 jsonnet-bundler = 'latest'
+node = 'latest'
 python = 'latest'
+rust = 'latest'
 
 # Kubernetes
 kubectl = 'latest'
@@ -31,3 +34,6 @@ kubie = 'latest'
 krew = 'latest'
 helm = 'latest'
 tanka = 'latest'
+
+[settings]
+minimum_release_age_excludes = ["npm:@oh-my-pi/pi-coding-agent", "herdr"]

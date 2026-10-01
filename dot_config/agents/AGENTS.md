@@ -32,3 +32,21 @@
   ownership when edits could conflict.
 - Inspect and reconcile delegated results rather than forwarding them blindly.
   The coordinating agent owns final synthesis, validation, and the response.
+
+## Worktrees and terminal workspaces
+
+- Use Worktrunk (`wt`, or the `worktrunk` tool when available) to create,
+  switch, list, merge, and remove Git worktrees. Do not use raw
+  `git worktree` commands unless Worktrunk cannot perform the operation.
+- Create a new worktree for isolated or parallel work (e.g. separate branches
+  or concurrent agents) instead of stashing or switching branches in place.
+- When running inside Herdr (`HERDR_ENV=1`), use Herdr when the user asks you
+  to orchestrate or control multiple panes, tabs, workspaces, or other agents,
+  or otherwise explicitly requests Herdr. Do not reach for Herdr merely because
+  a task could benefit from a background terminal or parallel work.
+- When running inside Herdr and you create a worktree, add it to a Herdr
+  workspace when appropriate (e.g. while orchestrating multiple worktrees or
+  agents, or when the user will want to work in or inspect it). Prefer one
+  Herdr workspace per worktree.
+- Close only the Herdr panes you created once they are no longer needed, and
+  never close the calling pane or panes created by the user or other agents.
