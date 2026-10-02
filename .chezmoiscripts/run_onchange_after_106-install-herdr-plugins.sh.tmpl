@@ -1,0 +1,14 @@
+{{ if or (eq .chezmoi.os "linux") (eq .chezmoi.os "darwin") -}}
+#!/bin/bash
+set -euo pipefail
+
+# Run after mise installs Herdr and the plugin build toolchains.
+{{- $mise := joinPath .chezmoi.homeDir ".local/bin/mise" }}
+for plugin in \
+{{ range .herdr_plugins.unix -}}
+    {{ . | quote }} \
+{{ end -}}
+; do
+    {{ $mise | quote }} exec -- herdr plugin install "$plugin" --yes
+done
+{{ end -}}

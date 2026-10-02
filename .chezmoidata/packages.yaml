@@ -5,6 +5,7 @@ packages:
             - 'zsh'
             - 'git'
             - 'curl'
+            - 'jq'
             - 'git-delta'
             - 'starship'
             - 'nushell'
@@ -26,6 +27,9 @@ packages:
                 - 'zsh'
                 - 'git'
                 - 'curl'
+                - 'jq'
+                - 'build-essential'
+                - 'libdigest-sha-perl'
                 - 'tar'
                 - 'unzip'
                 - 'xz-utils'
@@ -35,11 +39,28 @@ packages:
                 - 'zsh'
                 - 'git'
                 - 'curl'
+                - 'jq'
+                - 'base-devel'
+                - 'perl'
                 - 'tar'
                 - 'unzip'
                 - 'xz'
                 - 'ghostty'
             repositories:
+        dnf:
+            packages:
+                - 'zsh'
+                - 'git'
+                - 'jq'
+                - 'gcc'
+                - 'perl-Digest-SHA'
+                # Accept curl or curl-minimal without replacing either.
+                - '/usr/bin/curl'
+                - 'tar'
+                - 'unzip'
+                - 'xz'
+                # Install the shell changer used by the default-shell hook.
+                - '/usr/bin/chsh'
     windows:
         winget:
             - 'Starship.Starship'

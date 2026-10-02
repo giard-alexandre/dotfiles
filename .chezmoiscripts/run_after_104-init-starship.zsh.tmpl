@@ -1,0 +1,15 @@
+{{ if (or (eq .chezmoi.os "linux") (eq .chezmoi.os "darwin")) -}}
+#!/bin/zsh
+set -euo pipefail
+
+# Generate the Nushell prompt after tool installation on every apply.
+{{- $prompt := joinPath .chezmoi.homeDir ".local/share/nushell/vendor/autoload/starship.nu" }}
+mkdir -p {{ dir $prompt | quote }}
+{{ if eq .chezmoi.os "darwin" -}}
+{{ $starship := joinPath (dir (includeTemplate "brew-executable" .)) "starship" -}}
+{{ $starship | quote }} init nu > {{ $prompt | quote }}
+{{ else -}}
+{{ $mise := joinPath .chezmoi.homeDir ".local/bin/mise" -}}
+{{ $mise | quote }} exec -- starship init nu > {{ $prompt | quote }}
+{{ end -}}
+{{ end -}}

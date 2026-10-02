@@ -1,0 +1,11 @@
+{{ if eq (includeTemplate "linux-package-manager" .) "dnf" -}}
+#!/bin/bash
+set -euo pipefail
+
+echo -e "\0033[0;32m>>>>> Begin installing Packages for Linux DNF <<<<<\033[0m"
+
+{{ template "run-as-root" dict "chezmoi" .chezmoi "command" "dnf --refresh install -y \\" -}}
+{{- range .packages.linux.dnf.packages -}}{{- . | quote }} {{ end }};
+
+echo -e "\0033[0;32m>>>>> End installing Packages for Linux DNF <<<<<\033[0m"
+{{- end }}

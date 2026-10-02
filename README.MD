@@ -28,13 +28,19 @@ before the first questionnaire; a remote `init` needs Git earlier, to clone the
 source. Subsequent `chezmoi apply` runs perform the same
 check before changing files. A missing prerequisite stops with a list to install:
 Git for source/Git externals, `/bin/bash` for lifecycle scripts, curl for the
-macOS Homebrew bootstrap, and apt or pacman (plus sudo for non-root users) on
-the corresponding Linux distribution. This checks executable availability,
+macOS Homebrew bootstrap, and apt, pacman, or dnf (plus sudo for non-root users)
+when a Linux package-install hook applies. This checks executable availability,
 not versions, connectivity, credentials or package-manager health. Tools installed
 *by* the apply scripts (such as zsh, Starship and mise) are not preconditions.
 
-Linux provisioning supports Debian, Ubuntu, and Arch Linux; other distributions
-stop during preflight rather than continuing without required packages.
+Linux provisioning selects a package manager from `/etc/os-release`'s `ID`, then
+`ID_LIKE`: Debian/Ubuntu and derivatives (such as Mint, Pop!_OS, and Kali) use apt;
+Arch and derivatives (such as Manjaro and EndeavourOS) use pacman; Fedora and
+modern RHEL-family systems (including Rocky and AlmaLinux) use dnf. DNF installs
+the base tools and the provider of `chsh` needed by shell setup; either curl or
+curl-minimal satisfies its curl requirement. Other distributions are allowed,
+but must have the required tools provisioned separately; no package hook runs
+for them. DNF-family systems without dnf need it installed before applying.
 The apt hook refreshes package indexes before installation; the Arch hook uses
 `pacman -Syu` to avoid partial upgrades. Both stop on package-manager errors.
 
@@ -106,19 +112,46 @@ not need an old upstream-binary pin. Helix and .NET SDKs are managed by mise on
 both macOS and Linux. Platform-specific installers preserve these tools rather
 than dropping them because another platform needs a different installation path.
 
-After the platform's tools are installed, the provisioning hook generates
-`~/.local/share/nushell/vendor/autoload/starship.nu`: it invokes Homebrew's
+After the platform's tools are installed, a separate hook runs on every apply
+to generate `~/.local/share/nushell/vendor/autoload/starship.nu`, restoring it
+if deleted even when the mise installation hook is cached. It invokes Homebrew's
 Starship directly on macOS and mise's Starship on Linux. Starship is not executed
 while chezmoi renders templates, so it need not exist before the first apply.
-The hook also creates `~/.claude` before initializing RTK's global integration.
+The mise hook also creates `~/.claude` before initializing RTK's global integration.
 
 ## Herdr platform-specific bindings
 
-Herdr handles plugin platform filtering; the shared `plugins.json` registry is
-unchanged. The Worktrunk shortcuts (`prefix+shift+g` and `prefix+shift+d`) select
-`worktrunk-windows` on Windows and `worktrunk` on macOS/Linux. Install the
-corresponding plugin on each platform; the current registry does not contain
-`worktrunk-windows`, and a binding alone does not install it.
+Chezmoi's `106-install-herdr-plugins` hooks invoke `herdr plugin install --yes`
+after Herdr is available. On macOS/Linux, the hook runs through mise after tool
+installation. On Windows, a native `.cmd` hook uses Herdr from PATH.
+The installation inventory lives in `.chezmoidata/herdr.yaml`: Unix installs
+gitview, Git Status, resurrect, plugin manager, and Worktrunk; Windows installs
+Git Status, resurrect, and the Windows Worktrunk fork.
+
+Herdr owns its generated `plugins.json`, plugin checkouts, and plugin config/state
+directories. Chezmoi no longer manages that registry or overwrites unrelated
+local registrations. The `run_onchange` hooks run on the first apply and whenever
+the rendered inventory changes; reinstall a plugin with Herdr to refresh it.
+
+macOS/Linux use `devashish2203/herdr-worktrunk` (`worktrunk`); Windows uses
+[giard-alexandre/herdr-worktrunk-windows](https://github.com/giard-alexandre/herdr-worktrunk-windows)
+(`worktrunk.windows`). Both use their repository's default branch, without a
+`--ref` argument. The Worktrunk shortcuts (`prefix+shift+g` and `prefix+shift+d`)
+resolve to the selected plugin's `open-with-remotes` and `remove` actions.
+
+Native plugin builds require Rust/Cargo and a C linker. The Unix tool/package
+hooks supply Rust, jq, build prerequisites, and the checksum tools used by gitview;
+macOS needs the Xcode Command Line Tools used by Homebrew. On Windows, have
+Herdr, Git, Rust/Cargo with its Windows linker/toolchain, and Node available on
+PATH before applying. Windows Worktrunk additionally requires Herdr 0.8.0+,
+Worktrunk 0.60.0+ (`git-wt`), fzf, and Windows PowerShell 5.1+.
+Reload Herdr after applying the configuration.
+
+## Global Git ignores
+
+The home-directory `~/.gitignore` excludes `.pi` coding-agent configuration/state,
+`.scratch` exploratory files, and `.ralph` autonomous-agent loop artifacts at
+any depth. The managed Git config uses it through `core.excludesfile`.
 
 # Optional Configs
 

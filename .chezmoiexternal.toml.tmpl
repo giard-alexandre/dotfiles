@@ -117,7 +117,7 @@
     url = "https://github.com/ms-jpq/sad/releases/latest/download/{{ .rust_arch }}-{{ .rust_os }}.zip"
     executable = true
     refreshPeriod = "168h"
-    path = "sad"
+    path = {{ (eq .chezmoi.os "windows") | ternary "sad.exe" "sad" | quote }}
 ####################### /Install Sad #######################
 
 ####################### Install Dra #######################

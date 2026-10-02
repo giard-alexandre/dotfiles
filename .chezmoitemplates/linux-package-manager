@@ -1,0 +1,16 @@
+{{- $manager := "" -}}
+{{- if eq .chezmoi.os "linux" -}}
+{{- $families := concat (list (get .chezmoi.osRelease "id")) (splitList " " (get .chezmoi.osRelease "idLike")) -}}
+{{- range $families -}}
+{{- if not $manager -}}
+{{- if has . (list "debian" "ubuntu") -}}
+{{- $manager = "apt" -}}
+{{- else if eq . "arch" -}}
+{{- $manager = "pacman" -}}
+{{- else if has . (list "fedora" "rhel" "centos" "rocky" "almalinux") -}}
+{{- $manager = "dnf" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- $manager -}}

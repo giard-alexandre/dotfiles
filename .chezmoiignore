@@ -6,3 +6,6 @@ AGENTS.md
 docs/
 tests/
 tests/**
+
+# Herdr owns its generated plugin registry.
+.config/herdr/plugins.json

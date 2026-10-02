@@ -11,16 +11,6 @@ set -euo pipefail
 {{- $mise := joinPath .chezmoi.homeDir ".local/bin/mise" }}
 {{ $mise | quote }} install
 
-# Generate the Nushell prompt only after Starship is installed.
-{{- $prompt := joinPath .chezmoi.homeDir ".local/share/nushell/vendor/autoload/starship.nu" }}
-mkdir -p {{ dir $prompt | quote }}
-{{ if eq .chezmoi.os "darwin" -}}
-{{ $starship := joinPath (dir (includeTemplate "brew-executable" .)) "starship" -}}
-{{ $starship | quote }} init nu > {{ $prompt | quote }}
-{{ else -}}
-{{ $mise | quote }} exec -- starship init nu > {{ $prompt | quote }}
-{{ end -}}
-
 # setup RTK for usage
 mkdir -p {{ joinPath .chezmoi.homeDir ".claude" | quote }}
 {{ $mise | quote }} exec -- rtk init -g

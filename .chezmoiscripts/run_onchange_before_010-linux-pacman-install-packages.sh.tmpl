@@ -1,4 +1,4 @@
-{{ if and (eq .chezmoi.os "linux") (eq .chezmoi.osRelease.id "arch") -}}
+{{ if eq (includeTemplate "linux-package-manager" .) "pacman" -}}
 #!/bin/bash
 set -euo pipefail
 
