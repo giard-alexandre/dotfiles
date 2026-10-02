@@ -37,6 +37,17 @@ Run the isolated regression check with
 `python3 -m unittest -v tests/test_apply_prerequisites.py`.
 
 # Usage
+## Platform-specific helpers
+
+The Homebrew wrapper, Oh My Zsh `brew` plugin, and `brew-bump`/`brew-cleanup`
+helpers are enabled only on macOS. Applying on other platforms removes any
+previously installed copies of those two helper scripts; it does not remove
+Homebrew itself.
+
+The obsolete `fix-internet`, `flush-dns`, `restart-audio`, and `dotinstall` helpers
+are removed from the target home directory on the next apply. .NET SDKs are
+managed through mise's `dotnet` inventory; use `mise install` to install them.
+
 ## Common commands
 ```sh
 # Update the destination directory to match the target state

@@ -13,7 +13,6 @@ ZSH_HIGHLIGHT_HIGHLIGHTERS=( main brackets root )
 
 # Default OMZ Plugins
 plugins=(
-	brew
 	docker-compose
 	docker
 	extract
@@ -27,6 +26,10 @@ plugins=(
 	dotnet
 	fzf
 )
+
+if [ "$(uname -s)" = "Darwin" ]; then
+    plugins+=(brew)
+fi
 
 # Custom Plugins
 plugins+=(
