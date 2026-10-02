@@ -5,8 +5,6 @@ packages:
             - 'zsh'
             - 'git'
             - 'curl'
-            - 'git-delta'
-            - 'starship'
             - 'nushell'
             # /Shared
             - 'unzip'
@@ -26,22 +24,18 @@ packages:
                 - 'zsh'
                 - 'git'
                 - 'curl'
-                - 'starship'
-                - 'git-delta'
                 - 'tar'
                 - 'unzip'
-                - 'helix'
+                - 'xz-utils'
             repositories:
         pacman:
             packages:
                 - 'zsh'
                 - 'git'
                 - 'curl'
-                - 'starship'
-                - 'git-delta'
                 - 'tar'
                 - 'unzip'
-                - 'helix'
+                - 'xz'
                 - 'ghostty'
             repositories:
     windows:

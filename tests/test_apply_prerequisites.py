@@ -101,6 +101,32 @@ class ApplyPrerequisites(unittest.TestCase):
             (self.bin_dir / manager).unlink()
 
     @unittest.skipUnless(shutil.which("git"), "Git required to exercise successful init")
+    def test_unsupported_linux_aborts_apply_before_writing(self):
+        self.make_available("git", shutil.which("git"))
+        if platform.system() == "Darwin":
+            self.make_available("curl")
+        elif platform.system() == "Linux":
+            for manager in ("apt", "pacman", "sudo"):
+                self.make_available(manager)
+
+        initialized = self.run_cm(
+            "init", input="Fixture User\nfixture@example.invalid\nProjects\nn\n",
+        )
+        self.assertEqual(initialized.returncode, 0, initialized.stderr)
+        for distribution in ("fedora", "alpine"):
+            with self.subTest(distribution=distribution):
+                data = json.dumps({
+                    "chezmoi": {
+                        "os": "linux", "osRelease": {"id": distribution},
+                        "username": "root",
+                    },
+                })
+                result = self.run_cm("--override-data", data, "apply")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(f"Unsupported Linux distribution: {distribution}", result.stderr)
+                self.assertFalse((self.home / ".marker").exists())
+
+    @unittest.skipUnless(shutil.which("git"), "Git required to exercise successful init")
     def test_apply_checks_again_before_writing_and_recovers(self):
         self.make_available("git", shutil.which("git"))
         if platform.system() == "Darwin":

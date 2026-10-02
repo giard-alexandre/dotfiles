@@ -2,7 +2,6 @@
 
 # Disable Oh-My-Zsh autoupdates as they are handled by chezmoi
 zstyle ':omz:update' mode disabled
-zstyle :omz:plugins:iterm2 shell-integration yes
 
 DISABLE_AUTO_UPDATE=true
 DISABLE_MAGIC_FUNCTIONS=true
@@ -18,9 +17,7 @@ plugins=(
 	extract
 	fzf
 	git
-	iterm2
 	kubectl
-	macos
 	rust
 	z
 	dotnet
@@ -28,7 +25,8 @@ plugins=(
 )
 
 if [ "$(uname -s)" = "Darwin" ]; then
-    plugins+=(brew)
+    plugins+=(brew iterm2 macos)
+    zstyle :omz:plugins:iterm2 shell-integration yes
 fi
 
 # Custom Plugins

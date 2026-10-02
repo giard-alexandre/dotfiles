@@ -33,6 +33,11 @@ the corresponding Linux distribution. This checks executable availability,
 not versions, connectivity, credentials or package-manager health. Tools installed
 *by* the apply scripts (such as zsh, Starship and mise) are not preconditions.
 
+Linux provisioning supports Debian, Ubuntu, and Arch Linux; other distributions
+stop during preflight rather than continuing without required packages.
+The apt hook refreshes package indexes before installation; the Arch hook uses
+`pacman -Syu` to avoid partial upgrades. Both stop on package-manager errors.
+
 Run the isolated regression check with
 `python3 -m unittest -v tests/test_apply_prerequisites.py`.
 
@@ -43,6 +48,9 @@ The Homebrew wrapper, Oh My Zsh `brew` plugin, and `brew-bump`/`brew-cleanup`
 helpers are enabled only on macOS. Applying on other platforms removes any
 previously installed copies of those two helper scripts; it does not remove
 Homebrew itself.
+
+The `airport`/`afk` aliases and Oh My Zsh `macos`/`iterm2` plugins are also
+enabled only on macOS.
 
 The obsolete `fix-internet`, `flush-dns`, `restart-audio`, and `dotinstall` helpers
 are removed from the target home directory on the next apply. .NET SDKs are
@@ -88,6 +96,25 @@ mise exec -- omp --version
 # Explicitly upgrade the selected tools:
 mise upgrade bun 'npm:@oh-my-pi/pi-coding-agent'
 ```
+
+## Mise-managed tools and prompts
+
+Starship, Delta, Helix, and .NET SDKs are managed by mise rather than the native
+package hooks. Intel Macs use Delta 0.18.2, the last release with Intel macOS
+binaries; other platforms use the latest release.
+
+After `mise install`, the provisioning hook generates
+`~/.local/share/nushell/vendor/autoload/starship.nu`. Starship is not executed
+while chezmoi renders templates, so it need not exist before the first apply.
+The hook also creates `~/.claude` before initializing RTK's global integration.
+
+## Herdr platform-specific bindings
+
+Herdr handles plugin platform filtering; the shared `plugins.json` registry is
+unchanged. The Worktrunk shortcuts (`prefix+shift+g` and `prefix+shift+d`) select
+`worktrunk-windows` on Windows and `worktrunk` on macOS/Linux. Install the
+corresponding plugin on each platform; the current registry does not contain
+`worktrunk-windows`, and a binding alone does not install it.
 
 # Optional Configs
 

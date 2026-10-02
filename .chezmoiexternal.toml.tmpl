@@ -113,12 +113,11 @@
 
 ####################### Install Sad #######################
 [".local/bin/sad"]
-    type = "file"
+    type = "archive-file"
     url = "https://github.com/ms-jpq/sad/releases/latest/download/{{ .rust_arch }}-{{ .rust_os }}.zip"
     executable = true
     refreshPeriod = "168h"
-    [".local/bin/sad".filter]
-        command = "funzip"
+    path = "sad"
 ####################### /Install Sad #######################
 
 ####################### Install Dra #######################

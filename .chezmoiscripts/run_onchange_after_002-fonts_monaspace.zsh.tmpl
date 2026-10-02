@@ -25,7 +25,7 @@ mkdir -p "/tmp/Monaspace"
 dra download --select monaspace-{{ . }}-{{$monaspaceLatest}}{{$extension}} --output "/tmp/" {{ $repo }}
 
 # Extract file
-tar xf "/tmp/monaspace-{{ . }}-{{$monaspaceLatest}}{{$extension}}" -C "/tmp/Monaspace"
+unzip -q "/tmp/monaspace-{{ . }}-{{$monaspaceLatest}}{{$extension}}" -d "/tmp/Monaspace"
 
 {{ end -}}
 

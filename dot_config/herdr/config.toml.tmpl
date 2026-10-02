@@ -1,3 +1,4 @@
+{{- $worktrunk := (eq .chezmoi.os "windows") | ternary "worktrunk-windows" "worktrunk" -}}
 onboarding = false
 # Show first-run notification setup on startup.
 # Missing also shows onboarding; set false after you've chosen.
@@ -338,13 +339,13 @@ description = "command bar"
 [[keys.command]]
 key = "prefix+shift+g"
 type = "plugin_action"
-command = "worktrunk.open-with-remotes"
+command = "{{ $worktrunk }}.open-with-remotes"
 description = "Worktree: switch / create from local or remote branches"
 
 [[keys.command]]
 key = "prefix+shift+d"
 type = "plugin_action"
-command = "worktrunk.remove"
+command = "{{ $worktrunk }}.remove"
 description = "Worktree: remove"
 
 [[keys.command]]

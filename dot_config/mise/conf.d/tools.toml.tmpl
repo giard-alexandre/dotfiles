@@ -3,6 +3,8 @@
 # Tools
 neovim = 'latest'
 bat = 'latest'
+# Delta 0.18.2 is the last release with Intel macOS binaries.
+delta = '{{ if and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64") }}0.18.2{{ else }}latest{{ end }}'
 dprint = 'latest'
 eza = 'latest'
 # Pin fd on Intel Macs; use the latest release on other platforms.
@@ -11,8 +13,10 @@ fzf = 'latest'
 fx = 'latest'
 gojq = 'latest'
 jqp = 'latest'
+helix = 'latest'
 ripgrep = 'latest'
 rtk = 'latest'
+starship = 'latest'
 worktrunk = 'latest'
 "npm:@oh-my-pi/pi-coding-agent" = 'latest'
 herdr = 'latest'
