@@ -1,3 +1,4 @@
+{{ if eq .chezmoi.os "darwin" -}}
 #!/bin/sh
 # Sets reasonable macOS defaults.
 #
@@ -9,9 +10,6 @@
 #    https://gist.github.com/brandonb927/3195465
 #
 # Run ./set-defaults.sh and you'll be good to go.
-if [ "$(uname -s)" != "Darwin" ]; then
-	exit 0
-fi
 
 set +e
 
@@ -268,3 +266,4 @@ for app in "Activity Monitor" "Address Book" "Calendar" "Contacts" "cfprefsd" \
 	killall "$app" >/dev/null 2>&1
 done
 set -e
+{{ end -}}

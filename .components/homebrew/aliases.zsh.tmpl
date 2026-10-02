@@ -1,4 +1,5 @@
-if [ "$(uname -s)" = "Darwin" ] && command -v brew >/dev/null 2>&1; then
+{{ if eq .chezmoi.os "darwin" -}}
+if command -v brew >/dev/null 2>&1; then
 	brew() {
 		case "$1" in
 		cleanup)
@@ -13,3 +14,4 @@ if [ "$(uname -s)" = "Darwin" ] && command -v brew >/dev/null 2>&1; then
 		esac
 	}
 fi
+{{ end -}}

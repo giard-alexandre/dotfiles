@@ -1,5 +1,6 @@
 {{ if eq .chezmoi.os "darwin" -}}
 #!/bin/zsh
+set -euo pipefail
 
 echo -e "\0033[0;32m>>>>> Begin installing Packages for Darwin <<<<<\033[0m"
 
@@ -14,6 +15,6 @@ brew {{ . | quote }}
 cask {{ . | quote }}
 {{ end -}}
 EOF
-{{- end }}
 
 echo -e "\0033[0;32m>>>>> End installing Packages for Darwin <<<<<\033[0m"
+{{ end -}}

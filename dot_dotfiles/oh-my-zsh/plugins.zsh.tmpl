@@ -24,10 +24,10 @@ plugins=(
 	fzf
 )
 
-if [ "$(uname -s)" = "Darwin" ]; then
-    plugins+=(brew iterm2 macos)
-    zstyle :omz:plugins:iterm2 shell-integration yes
-fi
+{{ if eq .chezmoi.os "darwin" -}}
+plugins+=(brew iterm2 macos)
+zstyle :omz:plugins:iterm2 shell-integration yes
+{{ end -}}
 
 # Custom Plugins
 plugins+=(

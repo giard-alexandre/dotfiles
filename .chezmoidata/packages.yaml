@@ -5,6 +5,8 @@ packages:
             - 'zsh'
             - 'git'
             - 'curl'
+            - 'git-delta'
+            - 'starship'
             - 'nushell'
             # /Shared
             - 'unzip'

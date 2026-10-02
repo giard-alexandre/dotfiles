@@ -49,8 +49,9 @@ helpers are enabled only on macOS. Applying on other platforms removes any
 previously installed copies of those two helper scripts; it does not remove
 Homebrew itself.
 
-The `airport`/`afk` aliases and Oh My Zsh `macos`/`iterm2` plugins are also
-enabled only on macOS.
+The `airport`/`afk` aliases, macOS defaults script, and Oh My Zsh `macos`/`iterm2`
+plugins are also enabled only on macOS. Chezmoi templates select platform-specific
+content before installation; these files do not probe `uname` at shell startup.
 
 The obsolete `fix-internet`, `flush-dns`, `restart-audio`, and `dotinstall` helpers
 are removed from the target home directory on the next apply. .NET SDKs are
@@ -97,14 +98,17 @@ mise exec -- omp --version
 mise upgrade bun 'npm:@oh-my-pi/pi-coding-agent'
 ```
 
-## Mise-managed tools and prompts
+## Tool installation and prompts
 
-Starship, Delta, Helix, and .NET SDKs are managed by mise rather than the native
-package hooks. Intel Macs use Delta 0.18.2, the last release with Intel macOS
-binaries; other platforms use the latest release.
+Starship and Delta remain Homebrew packages on macOS and are installed through
+mise on Linux. Homebrew supplies current Intel Mac Delta builds, so macOS does
+not need an old upstream-binary pin. Helix and .NET SDKs are managed by mise on
+both macOS and Linux. Platform-specific installers preserve these tools rather
+than dropping them because another platform needs a different installation path.
 
-After `mise install`, the provisioning hook generates
-`~/.local/share/nushell/vendor/autoload/starship.nu`. Starship is not executed
+After the platform's tools are installed, the provisioning hook generates
+`~/.local/share/nushell/vendor/autoload/starship.nu`: it invokes Homebrew's
+Starship directly on macOS and mise's Starship on Linux. Starship is not executed
 while chezmoi renders templates, so it need not exist before the first apply.
 The hook also creates `~/.claude` before initializing RTK's global integration.
 
