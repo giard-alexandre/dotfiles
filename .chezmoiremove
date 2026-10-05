@@ -1,4 +1,0 @@
-.dotfiles/bin/fix-internet
-.dotfiles/bin/flush-dns
-.dotfiles/bin/restart-audio
-.dotfiles/functions/dotinstall
