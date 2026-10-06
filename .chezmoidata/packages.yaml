@@ -1,23 +1,21 @@
 packages:
     darwin:
         brews:
-            # Shared
+            # Required by shell setup and provisioning hooks.
             - 'zsh'
             - 'git'
             - 'curl'
             - 'jq'
-            - 'nushell'
-            # /Shared
             - 'unzip'
+        optional_brews:
+            - 'nushell'
         casks:
-            - 'alacritty'
             - 'betterdisplay'
             - 'ghostty'
             - 'jordanbaird-ice'
             - 'jackielii/tap/skhd-zig'
         taps:
             - 'jackielii/tap'  # skhd.zig
-            - 'felixkratz/formulae'  # sketchybar, borders
         arm64:
             casks:
                 - 'vorssaint'

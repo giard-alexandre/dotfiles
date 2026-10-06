@@ -4,22 +4,50 @@ set -euo pipefail
 
 echo -e "\0033[0;32m>>>>> Begin installing Packages for Darwin <<<<<\033[0m"
 
-{{ template "brew-executable" . }} bundle --file=/dev/stdin <<EOF
-{{ range .packages.darwin.taps -}}
-tap {{ . | quote }}
-{{ end -}}
+brew={{ includeTemplate "brew-executable" . | quote }}
+
+# Required CLI dependencies must succeed before the remaining hooks run.
+"$brew" bundle --file=/dev/stdin <<EOF
 {{ range .packages.darwin.brews -}}
 brew {{ . | quote }}
 {{ end -}}
+EOF
+
+# Optional packages are independent so one denial cannot block the others.
+for tap in \
+{{ range .packages.darwin.taps -}}
+    {{ . | quote }} \
+{{ end -}}
+; do
+    if ! "$brew" tap "$tap"; then
+        printf 'Warning: optional tap %s failed; continuing.\n' "$tap" >&2
+    fi
+done
+
+for package in \
+{{ range .packages.darwin.optional_brews -}}
+    {{ . | quote }} \
+{{ end -}}
+; do
+    if ! "$brew" install --formula "$package"; then
+        printf 'Warning: optional formula %s failed; continuing.\n' "$package" >&2
+    fi
+done
+
+for package in \
 {{ range .packages.darwin.casks -}}
-cask {{ . | quote }}
+    {{ . | quote }} \
 {{ end -}}
 {{ if eq .chezmoi.arch "arm64" -}}
 {{ range .packages.darwin.arm64.casks -}}
-cask {{ . | quote }}
+    {{ . | quote }} \
 {{ end -}}
 {{ end -}}
-EOF
+; do
+    if ! "$brew" install --cask "$package"; then
+        printf 'Warning: optional cask %s failed; continuing.\n' "$package" >&2
+    fi
+done
 
 echo -e "\0033[0;32m>>>>> End installing Packages for Darwin <<<<<\033[0m"
 {{ end -}}

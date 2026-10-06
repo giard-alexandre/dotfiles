@@ -1,3 +1,11 @@
 {{- if (eq .chezmoi.os "darwin") -}}
-{{- if (eq .chezmoi.arch "amd64") -}}/usr/local/bin/brew{{- else -}}/opt/homebrew/bin/brew{{- end -}}
+{{- if stat "/opt/workbrew/bin/brew" -}}
+/opt/workbrew/bin/brew
+{{- else if lookPath "brew" -}}
+{{- lookPath "brew" -}}
+{{- else if eq .chezmoi.arch "amd64" -}}
+/usr/local/bin/brew
+{{- else -}}
+/opt/homebrew/bin/brew
+{{- end -}}
 {{- end -}}

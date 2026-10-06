@@ -8,7 +8,7 @@ echo "Arch: updating packages";
 {{ end -}}
 
 {{   else if (eq .chezmoi.os "darwin") -}}
-{{ template "brew-executable" . }} update;
+{{ includeTemplate "brew-executable" . | quote }} update;
 
 {{   else if (eq .chezmoi.os "windows") -}}
 winget update;
