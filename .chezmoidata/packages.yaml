@@ -6,8 +6,6 @@ packages:
             - 'git'
             - 'curl'
             - 'jq'
-            - 'git-delta'
-            - 'starship'
             - 'nushell'
             # /Shared
             - 'unzip'
