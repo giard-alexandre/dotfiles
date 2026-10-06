@@ -9,7 +9,7 @@ echo "Arch: updating packages";
 {{ template "run-as-root" dict "chezmoi" .chezmoi "command" "pacman -Syu --noconfirm" }}
 {{ end -}}
 {{   else if (eq .chezmoi.os "darwin") -}}
-{{ template "brew-executable" . }} upgrade;
+{{ includeTemplate "brew-executable" . | quote }} upgrade;
 {{   else if (eq .chezmoi.os "windows") -}}
 # TODO: Add windows?
 {{ end -}}

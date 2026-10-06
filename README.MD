@@ -33,6 +33,14 @@ when a Linux package-install hook applies. This checks executable availability,
 not versions, connectivity, credentials or package-manager health. Tools installed
 *by* the apply scripts (such as zsh, Starship and mise) are not preconditions.
 
+On macOS, package hooks prefer [Workbrew's managed
+wrapper](https://workbrew.com/docs/troubleshooting), `/opt/workbrew/bin/brew`,
+then `brew` on `PATH`, then the standard Intel/Apple Silicon Homebrew path.
+Existing installations are reused; the Homebrew installer runs only when no
+selected installation exists. Initial package installs and package updates/upgrades
+use the selected command without bypassing Workbrew. Workspace access and
+formula/cask/tap policies still apply: a denied package operation stops apply.
+
 Linux provisioning selects a package manager from `/etc/os-release`'s `ID`, then
 `ID_LIKE`: Debian/Ubuntu and derivatives (such as Mint, Pop!_OS, and Kali) use apt;
 Arch and derivatives (such as Manjaro and EndeavourOS) use pacman; Fedora and
@@ -44,8 +52,8 @@ for them. DNF-family systems without dnf need it installed before applying.
 The apt hook refreshes package indexes before installation; the Arch hook uses
 `pacman -Syu` to avoid partial upgrades. Both stop on package-manager errors.
 
-Run the isolated regression check with
-`python3 -m unittest -v tests/test_apply_prerequisites.py`.
+Run the isolated regression checks with
+`python3 -m unittest discover -s tests -v`.
 
 # Usage
 ## Platform-specific helpers
