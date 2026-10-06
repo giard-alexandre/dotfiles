@@ -59,6 +59,8 @@ The `airport`/`afk` aliases, macOS defaults script, and Oh My Zsh `macos`/`iterm
 plugins are also enabled only on macOS. Chezmoi templates select platform-specific
 content before installation; these files do not probe `uname` at shell startup.
 
+Vorssaint is installed only on ARM64 (Apple Silicon) macOS; Intel Macs skip it.
+
 The obsolete `fix-internet`, `flush-dns`, `restart-audio`, and `dotinstall` helpers
 
 ## Common commands
@@ -85,35 +87,43 @@ chezmoi upgrade
 chezmoi cd
 ```
 
-## Bun and OMP
+## Bun, OMP, and Pi
 
-On macOS/Linux, mise installs Bun and [OMP](https://github.com/can1357/oh-my-pi)
-from the managed `conf.d/tools.toml` inventory. The global mise setting
+On macOS/Linux, mise installs Bun, [OMP](https://github.com/can1357/oh-my-pi), and
+[Pi](https://github.com/earendil-works/pi) from the managed `conf.d/tools.toml`
+inventory. The global mise setting
 `npm.package_manager = "bun"` selects Bun for all mise-managed `npm:` tools.
 It does not alias `npm` or change application projects' package managers.
 
+Pi uses `npm:@earendil-works/pi-coding-agent` (command `pi`), the successor to
+the deprecated `@mariozechner/pi-coding-agent` package. Pi, OMP, and Herdr are
+exempt from the default seven-day minimum release age.
+
 The chezmoi provisioning hook runs `mise install` when the managed configuration
-changes. Existing mise shell activation exposes `bun` and `omp`; no separate
+changes. Existing mise shell activation exposes `bun`, `omp`, and `pi`; no separate
 Bun-global installation or PATH entry is needed.
 
 ```sh
 mise exec -- omp --version
+mise exec -- pi --version
 # Explicitly upgrade the selected tools:
-mise upgrade bun 'npm:@oh-my-pi/pi-coding-agent'
+mise upgrade bun 'npm:@oh-my-pi/pi-coding-agent' 'npm:@earendil-works/pi-coding-agent'
 ```
 
 ## Tool installation and prompts
 
-Starship and Delta remain Homebrew packages on macOS and are installed through
-mise on Linux. Homebrew supplies current Intel Mac Delta builds, so macOS does
-not need an old upstream-binary pin. Helix and .NET SDKs are managed by mise on
-both macOS and Linux. Platform-specific installers preserve these tools rather
-than dropping them because another platform needs a different installation path.
+Starship, Delta, Helix, and .NET SDKs are managed by mise on macOS and Linux.
+On Intel Macs, Delta uses mise's `cargo:git-delta` backend to build with the
+managed Rust toolchain because current upstream releases lack Intel macOS
+binaries. Other platforms use the normal Delta binary backend. Both Delta and
+Starship track `latest` under the default seven-day minimum release-age policy.
+They are no longer in the Homebrew inventory; existing Homebrew installations
+are left untouched.
 
 After the platform's tools are installed, a separate hook runs on every apply
 to generate `~/.local/share/nushell/vendor/autoload/starship.nu`, restoring it
-if deleted even when the mise installation hook is cached. It invokes Homebrew's
-Starship directly on macOS and mise's Starship on Linux. Starship is not executed
+if deleted even when the mise installation hook is cached. It invokes
+`mise exec -- starship init nu` on both macOS and Linux. Starship is not executed
 while chezmoi renders templates, so it need not exist before the first apply.
 The mise hook also creates `~/.claude` before initializing RTK's global integration.
 
