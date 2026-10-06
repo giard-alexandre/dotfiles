@@ -3,6 +3,13 @@
 # Tools
 neovim = 'latest'
 bat = 'latest'
+{{ if and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64") -}}
+# Build Delta on Intel Macs; upstream releases no longer ship an Intel macOS binary.
+"cargo:git-delta" = 'latest'
+{{ else -}}
+delta = 'latest'
+{{ end -}}
+starship = 'latest'
 dprint = 'latest'
 eza = 'latest'
 # Pin fd on Intel Macs; use the latest release on other platforms.
@@ -11,10 +18,12 @@ fzf = 'latest'
 fx = 'latest'
 gojq = 'latest'
 jqp = 'latest'
+helix = 'latest'
 ripgrep = 'latest'
 rtk = 'latest'
 worktrunk = 'latest'
 "npm:@oh-my-pi/pi-coding-agent" = 'latest'
+"npm:@earendil-works/pi-coding-agent" = 'latest'
 herdr = 'latest'
 
 # Languages
@@ -36,4 +45,4 @@ helm = 'latest'
 tanka = 'latest'
 
 [settings]
-minimum_release_age_excludes = ["npm:@oh-my-pi/pi-coding-agent", "herdr"]
+minimum_release_age_excludes = ["npm:@oh-my-pi/pi-coding-agent", "npm:@earendil-works/pi-coding-agent", "herdr"]

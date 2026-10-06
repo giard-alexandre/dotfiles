@@ -21,7 +21,7 @@ kenc() {
 }
 
 kdec() {
-	echo "$@" | base64 -D
+	echo "$@" | base64 -d
 }
 
 # create new k3d test cluster

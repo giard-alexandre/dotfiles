@@ -1,4 +1,5 @@
 {{- $missing := list -}}
+{{- $manager := includeTemplate "linux-package-manager" . -}}
 {{- if not (lookPath "git") -}}
 {{- $missing = append $missing "git (source checkout and Git externals)" -}}
 {{- end -}}
@@ -9,18 +10,12 @@
 {{- if not (lookPath "curl") -}}
 {{- $missing = append $missing "curl (Homebrew bootstrap)" -}}
 {{- end -}}
-{{- else if eq .chezmoi.os "linux" -}}
+{{- else if $manager -}}
 {{- if and (ne .chezmoi.username "root") (not (lookPath "sudo")) -}}
 {{- $missing = append $missing "sudo (non-root package provisioning)" -}}
 {{- end -}}
-{{- if or (eq .chezmoi.osRelease.id "debian") (eq .chezmoi.osRelease.id "ubuntu") -}}
-{{- if not (lookPath "apt") -}}
-{{- $missing = append $missing "apt (package provisioning)" -}}
-{{- end -}}
-{{- else if eq .chezmoi.osRelease.id "arch" -}}
-{{- if not (lookPath "pacman") -}}
-{{- $missing = append $missing "pacman (package provisioning)" -}}
-{{- end -}}
+{{- if not (lookPath $manager) -}}
+{{- $missing = append $missing (printf "%s (package provisioning)" $manager) -}}
 {{- end -}}
 {{- end -}}
 {{- if $missing -}}

@@ -28,15 +28,41 @@ before the first questionnaire; a remote `init` needs Git earlier, to clone the
 source. Subsequent `chezmoi apply` runs perform the same
 check before changing files. A missing prerequisite stops with a list to install:
 Git for source/Git externals, `/bin/bash` for lifecycle scripts, curl for the
-macOS Homebrew bootstrap, and apt or pacman (plus sudo for non-root users) on
-the corresponding Linux distribution. This checks executable availability,
+macOS Homebrew bootstrap, and apt, pacman, or dnf (plus sudo for non-root users)
+when a Linux package-install hook applies. This checks executable availability,
 not versions, connectivity, credentials or package-manager health. Tools installed
 *by* the apply scripts (such as zsh, Starship and mise) are not preconditions.
+
+Linux provisioning selects a package manager from `/etc/os-release`'s `ID`, then
+`ID_LIKE`: Debian/Ubuntu and derivatives (such as Mint, Pop!_OS, and Kali) use apt;
+Arch and derivatives (such as Manjaro and EndeavourOS) use pacman; Fedora and
+modern RHEL-family systems (including Rocky and AlmaLinux) use dnf. DNF installs
+the base tools and the provider of `chsh` needed by shell setup; either curl or
+curl-minimal satisfies its curl requirement. Other distributions are allowed,
+but must have the required tools provisioned separately; no package hook runs
+for them. DNF-family systems without dnf need it installed before applying.
+The apt hook refreshes package indexes before installation; the Arch hook uses
+`pacman -Syu` to avoid partial upgrades. Both stop on package-manager errors.
 
 Run the isolated regression check with
 `python3 -m unittest -v tests/test_apply_prerequisites.py`.
 
 # Usage
+## Platform-specific helpers
+
+The Homebrew wrapper, Oh My Zsh `brew` plugin, and `brew-bump`/`brew-cleanup`
+helpers are enabled only on macOS. Applying on other platforms removes any
+previously installed copies of those two helper scripts; it does not remove
+Homebrew itself.
+
+The `airport`/`afk` aliases, macOS defaults script, and Oh My Zsh `macos`/`iterm2`
+plugins are also enabled only on macOS. Chezmoi templates select platform-specific
+content before installation; these files do not probe `uname` at shell startup.
+
+Vorssaint is installed only on ARM64 (Apple Silicon) macOS; Intel Macs skip it.
+
+The obsolete `fix-internet`, `flush-dns`, `restart-audio`, and `dotinstall` helpers
+
 ## Common commands
 ```sh
 # Update the destination directory to match the target state
@@ -61,22 +87,79 @@ chezmoi upgrade
 chezmoi cd
 ```
 
-## Bun and OMP
+## Bun, OMP, and Pi
 
-On macOS/Linux, mise installs Bun and [OMP](https://github.com/can1357/oh-my-pi)
-from the managed `conf.d/tools.toml` inventory. The global mise setting
+On macOS/Linux, mise installs Bun, [OMP](https://github.com/can1357/oh-my-pi), and
+[Pi](https://github.com/earendil-works/pi) from the managed `conf.d/tools.toml`
+inventory. The global mise setting
 `npm.package_manager = "bun"` selects Bun for all mise-managed `npm:` tools.
 It does not alias `npm` or change application projects' package managers.
 
+Pi uses `npm:@earendil-works/pi-coding-agent` (command `pi`), the successor to
+the deprecated `@mariozechner/pi-coding-agent` package. Pi, OMP, and Herdr are
+exempt from the default seven-day minimum release age.
+
 The chezmoi provisioning hook runs `mise install` when the managed configuration
-changes. Existing mise shell activation exposes `bun` and `omp`; no separate
+changes. Existing mise shell activation exposes `bun`, `omp`, and `pi`; no separate
 Bun-global installation or PATH entry is needed.
 
 ```sh
 mise exec -- omp --version
+mise exec -- pi --version
 # Explicitly upgrade the selected tools:
-mise upgrade bun 'npm:@oh-my-pi/pi-coding-agent'
+mise upgrade bun 'npm:@oh-my-pi/pi-coding-agent' 'npm:@earendil-works/pi-coding-agent'
 ```
+
+## Tool installation and prompts
+
+Starship, Delta, Helix, and .NET SDKs are managed by mise on macOS and Linux.
+On Intel Macs, Delta uses mise's `cargo:git-delta` backend to build with the
+managed Rust toolchain because current upstream releases lack Intel macOS
+binaries. Other platforms use the normal Delta binary backend. Both Delta and
+Starship track `latest` under the default seven-day minimum release-age policy.
+They are no longer in the Homebrew inventory; existing Homebrew installations
+are left untouched.
+
+After the platform's tools are installed, a separate hook runs on every apply
+to generate `~/.local/share/nushell/vendor/autoload/starship.nu`, restoring it
+if deleted even when the mise installation hook is cached. It invokes
+`mise exec -- starship init nu` on both macOS and Linux. Starship is not executed
+while chezmoi renders templates, so it need not exist before the first apply.
+The mise hook also creates `~/.claude` before initializing RTK's global integration.
+
+## Herdr platform-specific bindings
+
+Chezmoi's `106-install-herdr-plugins` hooks invoke `herdr plugin install --yes`
+after Herdr is available. On macOS/Linux, the hook runs through mise after tool
+installation. On Windows, a native `.cmd` hook uses Herdr from PATH.
+The installation inventory lives in `.chezmoidata/herdr.yaml`: Unix installs
+gitview, Git Status, resurrect, plugin manager, and Worktrunk; Windows installs
+Git Status, resurrect, and the Windows Worktrunk fork.
+
+Herdr owns its generated `plugins.json`, plugin checkouts, and plugin config/state
+directories. Chezmoi no longer manages that registry or overwrites unrelated
+local registrations. The `run_onchange` hooks run on the first apply and whenever
+the rendered inventory changes; reinstall a plugin with Herdr to refresh it.
+
+macOS/Linux use `devashish2203/herdr-worktrunk` (`worktrunk`); Windows uses
+[giard-alexandre/herdr-worktrunk-windows](https://github.com/giard-alexandre/herdr-worktrunk-windows)
+(`worktrunk.windows`). Both use their repository's default branch, without a
+`--ref` argument. The Worktrunk shortcuts (`prefix+shift+g` and `prefix+shift+d`)
+resolve to the selected plugin's `open-with-remotes` and `remove` actions.
+
+Native plugin builds require Rust/Cargo and a C linker. The Unix tool/package
+hooks supply Rust, jq, build prerequisites, and the checksum tools used by gitview;
+macOS needs the Xcode Command Line Tools used by Homebrew. On Windows, have
+Herdr, Git, Rust/Cargo with its Windows linker/toolchain, and Node available on
+PATH before applying. Windows Worktrunk additionally requires Herdr 0.8.0+,
+Worktrunk 0.60.0+ (`git-wt`), fzf, and Windows PowerShell 5.1+.
+Reload Herdr after applying the configuration.
+
+## Global Git ignores
+
+The home-directory `~/.gitignore` excludes `.pi` coding-agent configuration/state,
+`.scratch` exploratory files, and `.ralph` autonomous-agent loop artifacts at
+any depth. The managed Git config uses it through `core.excludesfile`.
 
 # Optional Configs
 

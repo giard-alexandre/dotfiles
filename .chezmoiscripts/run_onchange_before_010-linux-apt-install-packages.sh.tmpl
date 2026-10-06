@@ -1,9 +1,10 @@
-{{ if and (eq .chezmoi.os "linux") (or (eq .chezmoi.osRelease.id "debian") (eq .chezmoi.osRelease.id "ubuntu")) -}}
+{{ if eq (includeTemplate "linux-package-manager" .) "apt" -}}
 #!/bin/bash
+set -euo pipefail
 
 echo -e "\0033[0;32m>>>>> Begin installing Packages for Linux Apt <<<<<\033[0m"
 
-# TODO: Add repositories? Might need to be done in separate file.
+{{ template "run-as-root" dict "chezmoi" .chezmoi "command" "apt update" }}
 
 {{ template "run-as-root" dict "chezmoi" .chezmoi "command" "apt install -y \\" -}}
 {{- range .packages.linux.apt.packages -}}{{- . | quote }} {{ end }};

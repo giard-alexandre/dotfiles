@@ -6,3 +6,12 @@
 ########## "{{ $val }}" ##########
 {{ include $val }}
 {{end}}
+
+{{- $templateAliasGlob := osClean (printf "%v%v" .chezmoi.sourceDir "/.components/**/aliases.zsh.tmpl") }}
+{{ $templateAliases := glob $templateAliasGlob -}}
+{{ $rootData := . -}}
+
+{{range $val := $templateAliases}}
+########## "{{ $val }}" ##########
+{{ includeTemplate $val $rootData }}
+{{end}}

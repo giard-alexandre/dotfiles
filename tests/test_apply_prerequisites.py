@@ -28,6 +28,7 @@ class ApplyPrerequisites(unittest.TestCase):
             ".chezmoi.toml.tmpl",
             ".chezmoiignore",
             ".chezmoitemplates/apply-prerequisites",
+            ".chezmoitemplates/linux-package-manager",
         ):
             target = self.source / relative
             target.write_bytes((REPO / relative).read_bytes())
@@ -71,10 +72,19 @@ class ApplyPrerequisites(unittest.TestCase):
 
     def test_linux_package_manager_is_checked_for_selected_distribution(self):
         self.make_available("git")
-        for distribution, manager in (("ubuntu", "apt"), ("arch", "pacman")):
+        cases = (
+            ("ubuntu", "fedora", "apt"),  # ID takes precedence over ID_LIKE.
+            ("linuxmint", "ubuntu debian", "apt"),
+            ("arch", "", "pacman"),
+            ("manjaro", "arch", "pacman"),
+            ("fedora", "", "dnf"),
+            ("rocky", "rhel centos fedora", "dnf"),
+        )
+        for distribution, id_like, manager in cases:
             data = json.dumps({
                 "chezmoi": {
-                    "os": "linux", "osRelease": {"id": distribution},
+                    "os": "linux",
+                    "osRelease": {"id": distribution, "idLike": id_like},
                     "username": "fixture",
                 },
             })
@@ -89,7 +99,8 @@ class ApplyPrerequisites(unittest.TestCase):
             self.make_available(manager)
             root_data = json.dumps({
                 "chezmoi": {
-                    "os": "linux", "osRelease": {"id": distribution},
+                    "os": "linux",
+                    "osRelease": {"id": distribution, "idLike": id_like},
                     "username": "root",
                 },
             })
@@ -101,12 +112,38 @@ class ApplyPrerequisites(unittest.TestCase):
             (self.bin_dir / manager).unlink()
 
     @unittest.skipUnless(shutil.which("git"), "Git required to exercise successful init")
+    def test_preprovisioned_other_linux_distributions_can_apply_without_sudo(self):
+        self.make_available("git", shutil.which("git"))
+        if platform.system() == "Darwin":
+            self.make_available("curl")
+        elif platform.system() == "Linux":
+            for manager in ("apt", "pacman", "dnf", "sudo"):
+                self.make_available(manager)
+
+        initialized = self.run_cm(
+            "init", input="Fixture User\nfixture@example.invalid\nProjects\nn\n",
+        )
+        self.assertEqual(initialized.returncode, 0, initialized.stderr)
+        for manager in ("apt", "pacman", "dnf", "sudo"):
+            (self.bin_dir / manager).unlink(missing_ok=True)
+        data = json.dumps({
+            "chezmoi": {
+                "os": "linux",
+                "osRelease": {"id": "gentoo", "idLike": ""},
+                "username": "fixture",
+            },
+        })
+        result = self.run_cm("--override-data", data, "apply")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.home / ".marker").read_text(), "applied\n")
+
+    @unittest.skipUnless(shutil.which("git"), "Git required to exercise successful init")
     def test_apply_checks_again_before_writing_and_recovers(self):
         self.make_available("git", shutil.which("git"))
         if platform.system() == "Darwin":
             self.make_available("curl")
         elif platform.system() == "Linux":
-            for manager in ("apt", "pacman", "sudo"):
+            for manager in ("apt", "pacman", "dnf", "sudo"):
                 self.make_available(manager)
 
         answers = "Fixture User\nfixture@example.invalid\nProjects\nn\n"

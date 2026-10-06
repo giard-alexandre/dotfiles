@@ -1,0 +1,8 @@
+{{ if eq .chezmoi.os "windows" -}}
+@echo off
+rem Herdr and the plugin build toolchains must already be available on PATH.
+{{ range .herdr_plugins.windows -}}
+call herdr plugin install {{ . | quote }} --yes
+if errorlevel 1 exit /b %errorlevel%
+{{ end -}}
+{{ end -}}

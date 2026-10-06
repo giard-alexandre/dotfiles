@@ -1,5 +1,7 @@
+{{ if eq .chezmoi.os "darwin" -}}
 #!/bin/sh
 brew update
 brew outdated | xargs brew fetch
 brew upgrade
 brew cleanup
+{{ end -}}

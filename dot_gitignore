@@ -20,3 +20,11 @@ dist
 obj/
 bin/
 
+# Pi coding-agent project state and configuration.
+**/.pi
+
+# Temporary scratch files and exploratory work.
+**/.scratch
+
+# Ralph autonomous-agent loop state and artifacts.
+**/.ralph

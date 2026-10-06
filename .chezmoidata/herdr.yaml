@@ -1,0 +1,11 @@
+herdr_plugins:
+    unix:
+        - 'ChmaraX/herdr-gitview'
+        - 'ezcorp-org/herdr-git-status'
+        - 'ntindle/herdr-resurrect'
+        - 'speardragon/herdr-plugin-manager'
+        - 'devashish2203/herdr-worktrunk'
+    windows:
+        - 'ezcorp-org/herdr-git-status'
+        - 'ntindle/herdr-resurrect'
+        - 'giard-alexandre/herdr-worktrunk-windows'

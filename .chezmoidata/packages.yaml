@@ -5,8 +5,7 @@ packages:
             - 'zsh'
             - 'git'
             - 'curl'
-            - 'git-delta'
-            - 'starship'
+            - 'jq'
             - 'nushell'
             # /Shared
             - 'unzip'
@@ -16,34 +15,52 @@ packages:
             - 'ghostty'
             - 'jordanbaird-ice'
             - 'jackielii/tap/skhd-zig'
-            - 'vorssaint'
         taps:
             - 'jackielii/tap'  # skhd.zig
             - 'felixkratz/formulae'  # sketchybar, borders
+        arm64:
+            casks:
+                - 'vorssaint'
     linux:
         apt:
             packages:
                 - 'zsh'
                 - 'git'
                 - 'curl'
-                - 'starship'
-                - 'git-delta'
+                - 'jq'
+                - 'build-essential'
+                - 'libdigest-sha-perl'
                 - 'tar'
                 - 'unzip'
-                - 'helix'
+                - 'xz-utils'
             repositories:
         pacman:
             packages:
                 - 'zsh'
                 - 'git'
                 - 'curl'
-                - 'starship'
-                - 'git-delta'
+                - 'jq'
+                - 'base-devel'
+                - 'perl'
                 - 'tar'
                 - 'unzip'
-                - 'helix'
+                - 'xz'
                 - 'ghostty'
             repositories:
+        dnf:
+            packages:
+                - 'zsh'
+                - 'git'
+                - 'jq'
+                - 'gcc'
+                - 'perl-Digest-SHA'
+                # Accept curl or curl-minimal without replacing either.
+                - '/usr/bin/curl'
+                - 'tar'
+                - 'unzip'
+                - 'xz'
+                # Install the shell changer used by the default-shell hook.
+                - '/usr/bin/chsh'
     windows:
         winget:
             - 'Starship.Starship'
