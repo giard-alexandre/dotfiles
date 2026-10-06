@@ -60,8 +60,6 @@ plugins are also enabled only on macOS. Chezmoi templates select platform-specif
 content before installation; these files do not probe `uname` at shell startup.
 
 The obsolete `fix-internet`, `flush-dns`, `restart-audio`, and `dotinstall` helpers
-are removed from the target home directory on the next apply. .NET SDKs are
-managed through mise's `dotnet` inventory; use `mise install` to install them.
 
 ## Common commands
 ```sh
