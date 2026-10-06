@@ -14,6 +14,11 @@ brew {{ . | quote }}
 {{ range .packages.darwin.casks -}}
 cask {{ . | quote }}
 {{ end -}}
+{{ if eq .chezmoi.arch "arm64" -}}
+{{ range .packages.darwin.arm64.casks -}}
+cask {{ . | quote }}
+{{ end -}}
+{{ end -}}
 EOF
 
 echo -e "\0033[0;32m>>>>> End installing Packages for Darwin <<<<<\033[0m"

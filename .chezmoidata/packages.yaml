@@ -17,10 +17,12 @@ packages:
             - 'ghostty'
             - 'jordanbaird-ice'
             - 'jackielii/tap/skhd-zig'
-            - 'vorssaint'
         taps:
             - 'jackielii/tap'  # skhd.zig
             - 'felixkratz/formulae'  # sketchybar, borders
+        arm64:
+            casks:
+                - 'vorssaint'
     linux:
         apt:
             packages:
