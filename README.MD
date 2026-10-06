@@ -39,7 +39,14 @@ then `brew` on `PATH`, then the standard Intel/Apple Silicon Homebrew path.
 Existing installations are reused; the Homebrew installer runs only when no
 selected installation exists. Initial package installs and package updates/upgrades
 use the selected command without bypassing Workbrew. Workspace access and
-formula/cask/tap policies still apply: a denied package operation stops apply.
+formula/cask/tap policies still apply.
+
+The required CLI dependencies (`zsh`, `git`, `curl`, `jq`, and `unzip`) must install
+successfully before apply continues. Nushell, desktop casks (including ARM-only
+Vorssaint), and third-party taps are optional: each is attempted independently,
+and failures print warnings without blocking the remaining installs or apply.
+The successful `run_onchange` hook does not automatically retry skipped optional
+packages on an unchanged apply; install them manually after resolving the failure.
 
 Linux provisioning selects a package manager from `/etc/os-release`'s `ID`, then
 `ID_LIKE`: Debian/Ubuntu and derivatives (such as Mint, Pop!_OS, and Kali) use apt;

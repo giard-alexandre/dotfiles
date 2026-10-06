@@ -67,7 +67,7 @@ class HomebrewProvisioning(unittest.TestCase):
 
     def apply(self):
         return subprocess.run(
-            [*self.args, "apply"], env=self.env,
+            [*self.args, "apply", "--force"], env=self.env,
             capture_output=True, text=True, timeout=20,
         )
 
@@ -85,18 +85,60 @@ class HomebrewProvisioning(unittest.TestCase):
         self.assertEqual(self.installation_state.read_text(), "managed\n")
 
     @unittest.skipIf(WORKBREW.exists(), "real Workbrew takes precedence over fixture PATH")
-    def test_package_denial_aborts_before_applying_files(self):
+    def test_required_package_denial_aborts_before_applying_files(self):
         self.executable("brew", "#!/bin/sh\nexit 29\n")
         self.copy_source(".chezmoiscripts/run_onchange_before_010-darwin-install-packages.sh.tmpl")
         (self.source / ".chezmoidata.json").write_text(json.dumps({
             "packages": {"darwin": {
-                "taps": [], "brews": [], "casks": [], "arm64": {"casks": []},
+                "taps": [], "brews": ["git"], "optional_brews": [],
+                "casks": [], "arm64": {"casks": []},
             }},
         }))
         result = self.apply()
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse((self.home / ".marker").exists())
         self.assertEqual(self.installation_state.read_text(), "managed\n")
+
+    @unittest.skipIf(WORKBREW.exists(), "real Workbrew takes precedence over fixture PATH")
+    def test_optional_failures_allow_other_installs_and_apply(self):
+        self.executable(
+            "brew",
+            "#!/bin/sh\n"
+            "case \"$1:${2-}:${3-}\" in\n"
+            "    bundle:*) exec /bin/cat > /dev/null ;;\n"
+            "    tap:denied/tap:|install:--formula:denied-formula|"
+            "install:--cask:denied-cask|install:--cask:denied-arm-cask) exit 29 ;;\n"
+            "    tap:allowed/tap:) : > \"$FIXTURE_PACKAGE_STATE/tap\" ;;\n"
+            "    install:--formula:allowed-formula) : > \"$FIXTURE_PACKAGE_STATE/formula\" ;;\n"
+            "    install:--cask:allowed-cask) : > \"$FIXTURE_PACKAGE_STATE/cask\" ;;\n"
+            "    install:--cask:allowed-arm-cask) : > \"$FIXTURE_PACKAGE_STATE/arm-cask\" ;;\n"
+            "    *) exit 99 ;;\n"
+            "esac\n",
+        )
+        self.copy_source(".chezmoiscripts/run_onchange_before_010-darwin-install-packages.sh.tmpl")
+        (self.source / ".chezmoidata.json").write_text(json.dumps({
+            "packages": {"darwin": {
+                "brews": ["git"],
+                "taps": ["denied/tap", "allowed/tap"],
+                "optional_brews": ["denied-formula", "allowed-formula"],
+                "casks": ["denied-cask", "allowed-cask"],
+                "arm64": {"casks": ["denied-arm-cask", "allowed-arm-cask"]},
+            }},
+        }))
+        for arch in ("amd64", "arm64"):
+            with self.subTest(arch=arch):
+                installed = self.root / f"installed-{arch}"
+                installed.mkdir()
+                self.env["FIXTURE_PACKAGE_STATE"] = str(installed)
+                self.args[-1] = json.dumps({"chezmoi": {"os": "darwin", "arch": arch}})
+                (self.home / ".marker").unlink(missing_ok=True)
+                result = self.apply()
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual((self.home / ".marker").read_text(), "applied\n")
+                expected = {"tap", "formula", "cask"}
+                if arch == "arm64":
+                    expected.add("arm-cask")
+                self.assertEqual({path.name for path in installed.iterdir()}, expected)
 
 
 if __name__ == "__main__":
