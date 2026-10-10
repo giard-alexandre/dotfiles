@@ -59,6 +59,35 @@ for them. DNF-family systems without dnf need it installed before applying.
 The apt hook refreshes package indexes before installation; the Arch hook uses
 `pacman -Syu` to avoid partial upgrades. Both stop on package-manager errors.
 
+## Default shell on directory-managed accounts
+
+The default-shell hook makes zsh the account's login shell. It never fails the
+apply: problems print a yellow warning with the manual fix. The hook is skipped
+when the configured login shell (from `getent passwd` on Linux, `dscl` on macOS)
+already is the default zsh. Otherwise it lists every working zsh with its version
+and asks which one to use if there are several. The default is Homebrew's zsh on
+macOS and the package-manager zsh on Linux.
+
+- Local accounts (in `/etc/passwd`) and macOS use `chsh -s`, after adding
+  the chosen path to `/etc/shells` if it is missing.
+- SSSD accounts (`sss` in `/etc/nsswitch.conf` and `sssd` active) cannot use
+  `chsh`. After confirmation, the hook writes a root-owned, mode 600
+  `/etc/sssd/conf.d/50-chezmoi-shell.conf` with `[nss] override_shell`, then
+  runs `sss_cache -E` and restarts `sssd`. The override applies to **every**
+  SSSD user on the machine, and `/etc/sssd/sssd.conf` is never edited. The snippet
+  is removed again if `sssctl config-check` fails or `getent` does not show the
+  new shell. Without a terminal, the hook skips this step.
+- Other directories (LDAP/nslcd, winbind, OS Login, ...) are left unchanged,
+  with a warning only.
+
+Answers are saved in `${XDG_STATE_HOME:-~/.local/state}/chezmoi/default-shell`
+(`zsh_path=` and `sssd_override=yes|no`), so later applies do not ask again.
+A saved zsh that no longer runs is ignored. To be asked again, delete the line
+or the file. Because `run_onchange` hooks rerun only when their rendered content
+changes, also run
+`chezmoi state delete --bucket=entryState --key="$HOME/.chezmoiscripts/100-set-zsh-default-shell.sh"`
+so the next apply runs the hook again.
+
 Run the isolated regression checks with
 `python3 -m unittest discover -s tests -v`.
 
