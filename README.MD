@@ -64,7 +64,7 @@ The apt hook refreshes package indexes before installation; the Arch hook uses
 The default-shell hook makes zsh the account's login shell. It never fails the
 apply: problems print a yellow warning with the manual fix. The hook is skipped
 when the configured login shell (from `getent passwd` on Linux, `dscl` on macOS)
-already is the default zsh. Otherwise it lists every working zsh with its version
+already is a working default or saved zsh. Otherwise it lists every working zsh with its version
 and asks which one to use if there are several. The default is Homebrew's zsh on
 macOS and the package-manager zsh on Linux.
 
@@ -80,7 +80,8 @@ macOS and the package-manager zsh on Linux.
      `default_shell` set in `sssd.conf` for that domain. The domain comes from the
      `[domain/...]` sections of the root-only SSSD configuration, or from
      `realm list`, `klist` or `default_realm` in `/etc/krb5.conf`. Each candidate
-     is confirmed with `getent passwd "$USER@<domain>"`.
+     is confirmed with `getent passwd "$USER@<domain>"`. If your account matches
+     more than one domain, nothing is changed.
   2. If that has no effect because the directory sets a shell (which takes
      precedence over `default_shell`): `override_shell` in the same
      `[domain/<name>]` section. It replaces the shell of **every** user in that
@@ -93,9 +94,13 @@ macOS and the package-manager zsh on Linux.
   Before each sudo call the hook prints why it needs root (reading the SSSD
   configuration, adding the shell to `/etc/shells`, writing the snippet,
   restarting `sssd`), and the sudo password prompt repeats the reason. A denied
-  sudo stops with one warning. The snippet is removed again if
-  `sssctl config-check` fails or `getent` does not show the new shell. Without a
-  terminal, the hook skips SSSD changes.
+  sudo stops with one warning. If `sssctl config-check` fails, `sssd` fails to
+  restart, or `getent` does not show the new shell, the hook puts back the
+  previous snippet (or removes its own) and restarts `sssd`. Only a clean restart
+  where the shell did not change is recorded as "no effect". Without a terminal,
+  the hook does not ask for confirmation. It applies an SSSD step unattended only
+  when an earlier interactive run saved "yes" for it, and sudo then needs no
+  password.
 - Other directories (LDAP/nslcd, winbind, OS Login, ...) are left unchanged,
   with a warning only.
 

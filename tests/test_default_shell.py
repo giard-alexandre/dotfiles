@@ -16,7 +16,7 @@ USER = "tester"
 # Real utilities the hook needs; everything system-specific is faked.
 TOOLS = (
     "sed", "cut", "grep", "head", "tee", "mkdir", "mv", "rm", "dirname",
-    "realpath", "readlink", "cat", "chmod", "sh", "true", "tr",
+    "realpath", "readlink", "cat", "chmod", "sh", "true", "tr", "cp",
 )
 
 
@@ -89,7 +89,11 @@ class DefaultShell(unittest.TestCase):
             'echo "$*" >> "$FIXTURE_LOG/systemctl"\n'
             'case "$1" in\n'
             '    is-active) exit "${FIXTURE_SSSD_STATUS:-0}" ;;\n'
+            '    reset-failed) ;;\n'
             '    restart)\n'
+            # FIXTURE_RESTART_FAILURES=N: the next N restarts fail without reloading.
+            '        left=$(cat "$FIXTURE_LOG/restart-failures" 2>/dev/null || echo "${FIXTURE_RESTART_FAILURES:-0}")\n'
+            '        if [ "$left" -gt 0 ]; then echo $((left - 1)) > "$FIXTURE_LOG/restart-failures"; exit 1; fi\n'
             # Model SSSD precedence: override_shell > directory shell > default_shell.
             # [nss] settings apply to every domain; [domain/X] only to domain X.
             '        domain=$(sed -n "s/^domain=//p" "$FIXTURE_DIRECTORY")\n'
@@ -233,8 +237,11 @@ class DefaultShell(unittest.TestCase):
 
     def test_sssd_default_shell_in_users_domain(self):
         self.use_sssd()
+        # A passing validator: the success path must run sssctl config-check.
+        self.executable("sssctl", 'echo "$*" >> "$FIXTURE_LOG/sssctl"\n')
         result = self.apply(tty_input="y\n")
         self.assertApplied(result)
+        self.assertEqual(self.logged("sssctl"), "config-check\n")
         self.assertIn("Your account belongs to SSSD domain CORP.EXAMPLE.COM", result.stdout)
         self.assertEqual(
             self.snippet_text(), f"[domain/CORP.EXAMPLE.COM]\ndefault_shell = {self.sys_zsh}\n",
@@ -370,7 +377,7 @@ class DefaultShell(unittest.TestCase):
         self.assertApplied(result)
         self.assertIsNone(self.snippet_text())
         self.assertIn("getent does not report", result.stderr)
-        self.assertIn("for CORP.EXAMPLE.COM; removed", result.stderr)
+        self.assertIn("for CORP.EXAMPLE.COM; reverted", result.stderr)
         # default_shell, then the domain override: each restarts twice (apply + undo).
         self.assertEqual(self.logged("systemctl").count("restart sssd"), 4)
 
@@ -413,6 +420,92 @@ class DefaultShell(unittest.TestCase):
         self.assertFalse(self.state.exists())
         self.assertIn("No terminal available", result.stderr)
         self.assertEqual(self.logged("sudo"), "")
+
+    # --- review findings ------------------------------------------------------------
+    def test_render_survives_unreadable_or_odd_state_file(self):
+        # A state file that cannot be read (or is a directory) must not fail the apply.
+        self.local_account()
+        self.state.parent.mkdir(parents=True)
+        self.state.write_text("zsh_path=/bin/zsh\n")
+        self.state.chmod(0)
+        self.addCleanup(self.state.chmod, 0o600)
+        self.assertTrue(self.render().startswith("#!/bin/bash"))
+        result = self.apply()
+        self.assertApplied(result)
+        self.state.chmod(0o600)
+        self.state.unlink()
+        self.state.mkdir()
+        self.assertTrue(self.render().startswith("#!/bin/bash"))
+        self.assertApplied(self.apply())
+
+    def test_render_ignores_saved_zsh_that_no_longer_runs(self):
+        # The login shell equals a saved path that exists but is no longer a working
+        # zsh: the script must still render (and pick a working zsh at run time).
+        self.local_account()
+        broken = self.executable("broken-zsh", "exit 1\n", directory=self.sys_dir)
+        self.state.parent.mkdir(parents=True)
+        self.state.write_text(f"zsh_path={broken}\n")
+        self.set_login_shell(str(broken))
+        self.assertTrue(self.render().startswith("#!/bin/bash"))
+        result = self.apply()
+        self.assertApplied(result)
+        self.assertIn("no longer exists or does not run", result.stderr)
+        self.assertEqual(self.logged("chsh"), f"-s {self.sys_zsh}\n")
+        # A working saved zsh as login shell still renders nothing.
+        self.state.write_text(f"zsh_path={self.sys_zsh}\n")
+        self.set_login_shell(str(self.sys_zsh))
+        self.assertEqual(self.render(), "")
+
+    def test_sssd_restart_failure_is_not_saved_as_ineffective(self):
+        self.use_sssd(directory_shell="/bin/bash")
+        self.env["FIXTURE_RESTART_FAILURES"] = "1"
+        result = self.apply(tty_input="y\ny\n")
+        self.assertApplied(result)
+        self.assertIn("sssd failed to restart with the new setting", result.stderr)
+        self.assertNotIn("default_shell had no effect", result.stdout)
+        self.assertNotIn("for every user in", result.stderr)  # domain override not offered
+        self.assertIsNone(self.snippet_text())
+        self.assertNotIn("ineffective", self.state.read_text())
+        # The rollback restarted sssd (restart #2 succeeds).
+        self.assertEqual(self.logged("systemctl").count("restart sssd"), 2)
+
+    def test_sssd_existing_snippet_restored_after_failed_attempt(self):
+        # A working snippet from an earlier run must survive a failed new attempt.
+        self.use_sssd()
+        previous = "[domain/CORP.EXAMPLE.COM]\ndefault_shell = /bin/previous-zsh\n"
+        self.snippet.write_text(previous)
+        self.snippet.chmod(0o600)
+        self.executable("sssctl", "exit 1\n")
+        result = self.apply(tty_input="y\n")
+        self.assertApplied(result)
+        self.assertIn("sssctl config-check rejected", result.stderr)
+        self.assertEqual(self.snippet_text(), previous)
+        self.assertFalse(Path(f"{self.snippet}.chezmoi-backup").exists())
+
+    def test_sssd_existing_snippet_replaced_on_success_without_leftovers(self):
+        self.use_sssd()
+        self.snippet.write_text("[domain/CORP.EXAMPLE.COM]\ndefault_shell = /bin/previous-zsh\n")
+        result = self.apply(tty_input="y\n")
+        self.assertApplied(result)
+        self.assertEqual(
+            self.snippet_text(), f"[domain/CORP.EXAMPLE.COM]\ndefault_shell = {self.sys_zsh}\n",
+        )
+        self.assertFalse(Path(f"{self.snippet}.chezmoi-backup").exists())
+
+    def test_sssd_ambiguous_domain_changes_nothing(self):
+        # The same short name and uid resolve in two configured domains.
+        self.use_sssd()
+        self.executable(
+            "getent",
+            '[ "$1" = passwd ] || exit 2\n'
+            'case "$2" in tester|tester@*) cat "$FIXTURE_GETENT" ;; *) exit 2 ;; esac\n',
+        )
+        result = self.apply(tty_input="y\ny\ny\n")
+        self.assertApplied(result)
+        self.assertIn("matches more than one SSSD domain (OTHER.EXAMPLE.COM, CORP.EXAMPLE.COM)", result.stderr)
+        self.assertIsNone(self.snippet_text())
+        self.assertEqual(self.logged("systemctl").count("restart"), 0)
+        self.assertNotIn("for every", result.stderr)
 
     def test_unsupported_directory_warns(self):
         self.nsswitch.write_text("passwd: files ldap\n")

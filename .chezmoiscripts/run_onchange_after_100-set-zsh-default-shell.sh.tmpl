@@ -1,9 +1,9 @@
 {{- if (or (eq .chezmoi.os "linux") (eq .chezmoi.os "darwin")) -}}
 {{- /*
     Render-time no-op: when the account's configured login shell already is
-    the default target zsh (or a previously saved choice), render nothing so
-    chezmoi skips the script. Lookups are wrapped in `sh -c '... || true'`
-    because a non-zero exit from `output` would abort rendering.
+    a working default target zsh (or a working saved choice), render nothing so
+    chezmoi skips the script. All lookups run in `sh -c` scripts that always
+    exit 0, because a failing `output` or `include` would abort the whole apply.
 */ -}}
 {{-   $login := "" -}}
 {{-   $targets := list -}}
@@ -15,23 +15,23 @@
 {{-     if $entry -}}
 {{-       $login = splitList ":" $entry | last | trim -}}
 {{-     end -}}
-{{-     range (list "/bin/zsh" "/usr/bin/zsh") -}}
-{{-       if stat . -}}
-{{-         $targets = append $targets . -}}
-{{-       end -}}
-{{-     end -}}
+{{-     $targets = list "/bin/zsh" "/usr/bin/zsh" -}}
 {{-   end -}}
 {{-   $stateFile := env "DEFAULT_SHELL_STATE_FILE" -}}
 {{-   if not $stateFile -}}
 {{-     $stateFile = joinPath (env "XDG_STATE_HOME" | default (joinPath .chezmoi.homeDir ".local" "state")) "chezmoi" "default-shell" -}}
 {{-   end -}}
-{{-   if stat $stateFile -}}
-{{-     $saved := include $stateFile | regexFind "(?m)^zsh_path=.*$" | trimPrefix "zsh_path=" | trim -}}
-{{-     if and $saved (stat $saved) -}}
-{{-       $targets = append $targets $saved -}}
-{{-     end -}}
-{{-   end -}}
-{{-   if not (and $login (has $login $targets)) -}}
+{{- /* Print the targets (plus the saved zsh_path) that run as zsh, like the run-time check. */ -}}
+{{-   $probe := `state=$1 targets=$2
+works() { [ -x "$1" ] && [ -n "$("$1" -c 'echo $ZSH_VERSION' </dev/null 2>/dev/null)" ] && printf '%s\n' "$1"; }
+printf '%s\n' "$targets" | while IFS= read -r p; do [ -z "$p" ] || works "$p"; done
+if [ -f "$state" ] && [ -r "$state" ]; then
+    saved=$(sed -n 's/^zsh_path=//p' "$state" 2>/dev/null | head -n 1)
+    [ -z "$saved" ] || works "$saved"
+fi
+exit 0` -}}
+{{-   $working := output "/bin/sh" "-c" $probe "sh" $stateFile ($targets | join "\n") | splitList "\n" -}}
+{{-   if not (and $login (has $login $working)) -}}
 #!/bin/bash
 # Make zsh the account's login shell without ever failing the apply.
 # System paths can be overridden (tests only) through DEFAULT_SHELL_* variables.
@@ -345,10 +345,27 @@ manual_fix() {
         "$body" "$SSSD_SNIPPET" "$SSSD_SNIPPET" "$SSSD_SNIPPET"
 }
 
-remove_snippet() {
+SNIPPET_BACKUP=""
+
+backup_snippet() {
+    # Keep a root-only copy of an existing snippet (e.g. from an earlier run) so a
+    # failed attempt restores it instead of deleting a working setting.
+    SNIPPET_BACKUP=""
     [ -e "$SSSD_SNIPPET" ] || return 0
-    as_root_for "remove $SSSD_SNIPPET again" rm -f "$SSSD_SNIPPET" ||
-        warn "Could not remove $SSSD_SNIPPET; remove it manually."
+    if as_root_for "back up the existing $SSSD_SNIPPET before replacing it" \
+        cp -p "$SSSD_SNIPPET" "$SSSD_SNIPPET.chezmoi-backup"; then
+        SNIPPET_BACKUP="$SSSD_SNIPPET.chezmoi-backup"
+        return 0
+    fi
+    warn "Could not back up the existing $SSSD_SNIPPET; leaving it unchanged."
+    return 1
+}
+
+drop_backup() {
+    [ -n "$SNIPPET_BACKUP" ] || return 0
+    as_root_for "remove the backup $SNIPPET_BACKUP" rm -f "$SNIPPET_BACKUP" ||
+        warn "Could not remove $SNIPPET_BACKUP; remove it manually."
+    SNIPPET_BACKUP=""
 }
 
 SSSD_RESTART_REASON="clear the SSSD cache and restart sssd so it reads the new setting"
@@ -363,20 +380,32 @@ restart_sssd() {
         systemctl restart sssd'
 }
 
-undo_snippet() {
-    # Remove the snippet and restart in a single sudo call, so sssd is never left
-    # stopped with the snippet still in place.
-    [ -e "$SSSD_SNIPPET" ] || return 0
-    as_root_for "remove $SSSD_SNIPPET again and restart sssd without it" sh -c '
-        rm -f "$1" || exit 1
+restore_snippet() {
+    # restore_snippet RESTART: put back the previous snippet (or remove ours) and, when
+    # RESTART is "restart", restart sssd in the same sudo call so it is never left
+    # stopped with a half-applied setting. 0 = restored (and restarted).
+    local reason="remove the new $SSSD_SNIPPET again (restoring any previous version)"
+    [ "$1" = "restart" ] && reason="$reason and restart sssd without it"
+    as_root_for "$reason" sh -c '
+        snippet=$1 backup=$2 restart=$3
+        if [ -n "$backup" ]; then mv -f "$backup" "$snippet" || exit 1
+        else rm -f "$snippet" || exit 1; fi
+        [ "$restart" = restart ] || exit 0
         sss_cache -E 2>/dev/null
         systemctl reset-failed sssd 2>/dev/null
-        systemctl restart sssd || exit 2' sh "$SSSD_SNIPPET"
+        systemctl restart sssd || exit 2' sh "$SSSD_SNIPPET" "$SNIPPET_BACKUP" "$1"
     case $? in
-        0) ;;
+        0) SNIPPET_BACKUP=""; return 0 ;;
         2) warn "Could not restart sssd; run: sudo systemctl reset-failed sssd && sudo systemctl restart sssd" ;;
-        *) warn "Could not remove $SSSD_SNIPPET; remove it manually and restart sssd." ;;
+        *)
+            if [ -n "$SNIPPET_BACKUP" ]; then
+                warn "Could not restore $SSSD_SNIPPET from $SNIPPET_BACKUP; restore it manually and restart sssd."
+            else
+                warn "Could not remove $SSSD_SNIPPET; remove it manually and restart sssd."
+            fi
+            ;;
     esac
+    return 1
 }
 
 account_uid() {
@@ -384,9 +413,12 @@ account_uid() {
 }
 
 find_sssd_domain() {
-    # find_sssd_domain CANDIDATES: print the candidate domain that serves $ACCOUNT,
+    # find_sssd_domain CANDIDATES: print the one candidate domain that serves $ACCOUNT,
     # verified through NSS by comparing the uid of ACCOUNT and ACCOUNT@DOMAIN.
-    local uid name
+    # Returns 1 if none match and 2 if several distinct domains match (ambiguous:
+    # writing a per-domain setting could change the wrong domain's users); then the
+    # matching names are printed instead.
+    local uid name found="" found_lc name_lc
     uid="$(account_uid "$ACCOUNT")"
     [ -n "$uid" ] || return 1
     case "$ACCOUNT" in
@@ -399,12 +431,20 @@ find_sssd_domain() {
     while IFS= read -r name; do
         name="${name//[[:space:]]/}"
         [ -n "$name" ] || continue
-        if [ "$(account_uid "$ACCOUNT@$name")" = "$uid" ]; then
-            printf '%s\n' "$name"
-            return 0
+        [ "$(account_uid "$ACCOUNT@$name")" = "$uid" ] || continue
+        if [ -z "$found" ]; then
+            found="$name"
+            continue
+        fi
+        found_lc="$(printf '%s' "$found" | tr '[:upper:]' '[:lower:]')"
+        name_lc="$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')"
+        if [ "$found_lc" != "$name_lc" ]; then
+            printf '%s, %s\n' "$found" "$name"
+            return 2
         fi
     done <<< "$1"
-    return 1
+    [ -n "$found" ] || return 1
+    printf '%s\n' "$found"
 }
 
 config_domains() {
@@ -421,28 +461,43 @@ domain_candidates() {
 }
 
 apply_snippet() {
-    # apply_snippet METHOD [DOMAIN]: write, validate, restart, verify. 0 = shell changed.
+    # apply_snippet METHOD [DOMAIN]: write, validate, restart, verify.
+    #   0 = shell changed (snippet kept)
+    #   1 = sssd restarted fine but getent still shows another shell (snippet reverted):
+    #       the only outcome that proves the setting has no effect
+    # Anything else (write, validation, restart or rollback failure) warns and stops.
     local reason="write the SSSD setting to $SSSD_SNIPPET (root-only directory)"
     ensure_in_shells
+    backup_snippet || finish
     if ! { as_root_for "$reason" mkdir -p "$SSSD_CONF_DIR" &&
         snippet_body "$@" | as_root_for "$reason" tee "$SSSD_SNIPPET" > /dev/null &&
         as_root_for "$reason" chown root:root "$SSSD_SNIPPET" &&
         as_root_for "$reason" chmod 600 "$SSSD_SNIPPET"; }; then
         warn "Could not write $SSSD_SNIPPET (sudo unavailable or denied). $(manual_fix "$@")"
-        remove_snippet
+        restore_snippet no-restart
         finish
     fi
     if command -v sssctl > /dev/null 2>&1 &&
         ! as_root_for "check the SSSD configuration with sssctl config-check" sssctl config-check > /dev/null; then
-        remove_snippet
-        warn "sssctl config-check rejected the configuration; removed $SSSD_SNIPPET. Login shell left unchanged."
+        restore_snippet no-restart
+        warn "sssctl config-check rejected the configuration; reverted $SSSD_SNIPPET. Login shell left unchanged."
         finish
     fi
-    if restart_sssd && [ "$(login_shell)" = "$ZSH_PATH" ]; then
+    if ! restart_sssd; then
+        warn "sssd failed to restart with the new setting; reverting $SSSD_SNIPPET."
+        restore_snippet restart
+        warn "Login shell left unchanged. $(manual_fix "$@")"
+        finish
+    fi
+    if [ "$(login_shell)" = "$ZSH_PATH" ]; then
+        drop_backup
         info "Login shell is now $ZSH_PATH via $SSSD_SNIPPET ($1)."
         return 0
     fi
-    undo_snippet
+    if ! restore_snippet restart; then
+        warn "Login shell left unchanged. $(manual_fix "$@")"
+        finish
+    fi
     return 1
 }
 
@@ -480,9 +535,18 @@ if ! SSSD_CONFIG="$(as_root_for "read the root-only SSSD configuration ($SSSD_CO
     finish
 fi
 
-DOMAIN=""
-if DOMAIN="$(find_sssd_domain "$(domain_candidates "$SSSD_CONFIG")")" &&
-    ! config_domains "$SSSD_CONFIG" | grep -qixF "$DOMAIN"; then
+DOMAIN="$(find_sssd_domain "$(domain_candidates "$SSSD_CONFIG")")"
+case $? in
+    0) ;;
+    2)
+        # Not knowing which domain the account comes from, any per-domain or [nss]
+        # override could change the wrong users: stop instead of guessing.
+        warn "$ACCOUNT matches more than one SSSD domain ($DOMAIN) with the same uid, so the right domain cannot be chosen safely; login shell left unchanged. $(manual_fix default_shell '<your domain>')"
+        finish
+        ;;
+    *) DOMAIN="" ;;
+esac
+if [ -n "$DOMAIN" ] && ! config_domains "$SSSD_CONFIG" | grep -qixF "$DOMAIN"; then
     # Guessed from Kerberos/realmd hints, not an SSSD section: try default_shell only.
     info "Your account appears to belong to $DOMAIN, which is not a section in the SSSD configuration."
     if [ "$(state_get sssd_default_shell)" != "ineffective" ] && apply_snippet default_shell "$DOMAIN"; then
@@ -503,7 +567,7 @@ if [ -n "$DOMAIN" ]; then
     info "Option 2: set override_shell in domain $DOMAIN. It replaces the login shell of EVERY user in $DOMAIN on this machine, including users whose directory entry sets a shell. Users of other SSSD domains and local accounts are unaffected."
     confirm_or_finish sssd_domain_override "Set override_shell = $ZSH_PATH for every user in $DOMAIN?" domain_override_shell "$DOMAIN"
     if ! apply_snippet domain_override_shell "$DOMAIN"; then
-        warn "getent does not report $ZSH_PATH after setting override_shell for $DOMAIN; removed $SSSD_SNIPPET. $(manual_fix domain_override_shell "$DOMAIN")"
+        warn "getent does not report $ZSH_PATH after setting override_shell for $DOMAIN; reverted $SSSD_SNIPPET. $(manual_fix domain_override_shell "$DOMAIN")"
     fi
     finish
 fi
@@ -513,7 +577,7 @@ info "Could not determine which SSSD domain serves $ACCOUNT, so no per-domain se
 info "Option 3: set override_shell in [nss], which changes the login shell for EVERY SSSD user of EVERY domain on this machine, including users whose directory entry sets a shell."
 confirm_or_finish sssd_override "Set override_shell = $ZSH_PATH for every SSSD user?" override_shell
 if ! apply_snippet override_shell; then
-    warn "getent does not report $ZSH_PATH after setting override_shell; removed $SSSD_SNIPPET. $(manual_fix override_shell)"
+    warn "getent does not report $ZSH_PATH after setting override_shell; reverted $SSSD_SNIPPET. $(manual_fix override_shell)"
 fi
 finish
 {{   end -}}
