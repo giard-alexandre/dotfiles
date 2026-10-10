@@ -59,6 +59,62 @@ for them. DNF-family systems without dnf need it installed before applying.
 The apt hook refreshes package indexes before installation; the Arch hook uses
 `pacman -Syu` to avoid partial upgrades. Both stop on package-manager errors.
 
+## Default shell on directory-managed accounts
+
+The default-shell hook makes zsh the account's login shell. It never fails the
+apply: problems print a yellow warning with the manual fix. The hook is skipped
+when the configured login shell (from `getent passwd` on Linux, `dscl` on macOS)
+already is a working default or saved zsh. Otherwise it lists every working zsh with its version
+and asks which one to use if there are several. The default is Homebrew's zsh on
+macOS and the package-manager zsh on Linux.
+
+- Local accounts (in `/etc/passwd`) and macOS use `chsh -s`, after adding
+  the chosen path to `/etc/shells` if it is missing.
+- SSSD accounts (`sss` in `/etc/nsswitch.conf` and `sssd` active) cannot use
+  `chsh`. The hook writes a root-owned, mode 600
+  `/etc/sssd/conf.d/50-chezmoi-shell.conf`, runs `sss_cache -E`, restarts `sssd`,
+  and checks the result with `getent`. `/etc/sssd/sssd.conf` is never edited.
+  Each step asks for confirmation:
+  1. `default_shell` in your domain's `[domain/<name>]` section. It affects only
+     users of that domain whose directory entry has no shell, and outranks a
+     `default_shell` set in `sssd.conf` for that domain. The domain comes from the
+     `[domain/...]` sections of the root-only SSSD configuration, or from
+     `realm list`, `klist` or `default_realm` in `/etc/krb5.conf`. Each candidate
+     is confirmed with `getent passwd "$USER@<domain>"`. If your account matches
+     more than one domain, nothing is changed.
+  2. If that has no effect because the directory sets a shell (which takes
+     precedence over `default_shell`): `override_shell` in the same
+     `[domain/<name>]` section. It replaces the shell of **every** user in that
+     domain, including users whose directory entry sets one. Users of other SSSD
+     domains and local accounts are unaffected.
+  3. Only if the domain cannot be found in the SSSD configuration:
+     `[nss] override_shell`, which changes the shell of **every** SSSD user of
+     **every** domain on the machine.
+
+  Before each sudo call the hook prints why it needs root (reading the SSSD
+  configuration, adding the shell to `/etc/shells`, writing the snippet,
+  restarting `sssd`), and the sudo password prompt repeats the reason. A denied
+  sudo stops with one warning. If `sssctl config-check` fails, `sssd` fails to
+  restart, or `getent` does not show the new shell, the hook puts back the
+  previous snippet (or removes its own) and restarts `sssd`. Only a clean restart
+  where the shell did not change is recorded as "no effect". Without a terminal,
+  the hook does not ask for confirmation. It applies an SSSD step unattended only
+  when an earlier interactive run saved "yes" for it, and sudo then needs no
+  password.
+- Other directories (LDAP/nslcd, winbind, OS Login, ...) are left unchanged,
+  with a warning only.
+
+Answers are saved in `${XDG_STATE_HOME:-~/.local/state}/chezmoi/default-shell`:
+`zsh_path=`, `sssd_default_shell=yes|no|ineffective`,
+`sssd_domain_override=yes|no` and `sssd_override=yes|no`. Later applies do not
+ask again, and `ineffective` skips straight to the per-domain `override_shell`
+question.
+A saved zsh that no longer runs is ignored. To be asked again, delete the line
+or the file. Because `run_onchange` hooks rerun only when their rendered content
+changes, also run
+`chezmoi state delete --bucket=entryState --key="$HOME/.chezmoiscripts/100-set-zsh-default-shell.sh"`
+so the next apply runs the hook again.
+
 Run the isolated regression checks with
 `python3 -m unittest discover -s tests -v`.
 
