@@ -331,11 +331,11 @@ confirm() {
 
 snippet_body() {
     # snippet_body METHOD [DOMAIN]
-    if [ "$1" = "default_shell" ]; then
-        printf '[domain/%s]\ndefault_shell = %s\n' "$2" "$ZSH_PATH"
-    else
-        printf '[nss]\noverride_shell = %s\n' "$ZSH_PATH"
-    fi
+    case "$1" in
+        default_shell) printf '[domain/%s]\ndefault_shell = %s\n' "$2" "$ZSH_PATH" ;;
+        domain_override_shell) printf '[domain/%s]\noverride_shell = %s\n' "$2" "$ZSH_PATH" ;;
+        *) printf '[nss]\noverride_shell = %s\n' "$ZSH_PATH" ;;
+    esac
 }
 
 manual_fix() {
@@ -351,10 +351,32 @@ remove_snippet() {
         warn "Could not remove $SSSD_SNIPPET; remove it manually."
 }
 
+SSSD_RESTART_REASON="clear the SSSD cache and restart sssd so it reads the new setting"
+
 restart_sssd() {
-    as_root_for "clear the SSSD cache and restart sssd so it reads the new setting" sss_cache -E ||
-        warn "sss_cache -E failed; cached entries may be stale."
-    as_root_for "clear the SSSD cache and restart sssd so it reads the new setting" systemctl restart sssd
+    # One sudo call: while sssd is down, sudo cannot even look up an SSSD user.
+    # reset-failed clears systemd's start limit (5 starts in 50s by default), which
+    # trying default_shell and then override_shell can otherwise hit.
+    as_root_for "$SSSD_RESTART_REASON" sh -c '
+        sss_cache -E || echo "sss_cache -E failed; cached entries may be stale." >&2
+        systemctl reset-failed sssd 2>/dev/null
+        systemctl restart sssd'
+}
+
+undo_snippet() {
+    # Remove the snippet and restart in a single sudo call, so sssd is never left
+    # stopped with the snippet still in place.
+    [ -e "$SSSD_SNIPPET" ] || return 0
+    as_root_for "remove $SSSD_SNIPPET again and restart sssd without it" sh -c '
+        rm -f "$1" || exit 1
+        sss_cache -E 2>/dev/null
+        systemctl reset-failed sssd 2>/dev/null
+        systemctl restart sssd || exit 2' sh "$SSSD_SNIPPET"
+    case $? in
+        0) ;;
+        2) warn "Could not restart sssd; run: sudo systemctl reset-failed sssd && sudo systemctl restart sssd" ;;
+        *) warn "Could not remove $SSSD_SNIPPET; remove it manually and restart sssd." ;;
+    esac
 }
 
 account_uid() {
@@ -420,8 +442,7 @@ apply_snippet() {
         info "Login shell is now $ZSH_PATH via $SSSD_SNIPPET ($1)."
         return 0
     fi
-    remove_snippet
-    restart_sssd || warn "Could not restart sssd; run: sudo systemctl restart sssd"
+    undo_snippet
     return 1
 }
 
@@ -429,67 +450,68 @@ if [ "$NEEDS_SUDO" = "true" ]; then
     info "Changing an SSSD account's shell needs sudo: SSSD's configuration is root-only and sssd must be restarted."
 fi
 
-DOMAIN=""
+confirm_or_finish() {
+    # confirm_or_finish STATE_KEY QUESTION MANUAL_ARGS...: continue only on yes.
+    local key="$1" question="$2"
+    shift 2
+    confirm "$key" "$question"
+    case $? in
+        0) return 0 ;;
+        1) warn "Declined; login shell left unchanged. $(manual_fix "$@")" ;;
+        *) warn "$(manual_fix "$@")" ;;
+    esac
+    finish
+}
+
+info "Option 1: set default_shell in your SSSD domain. It only affects users of that domain whose directory entry has no shell; users with a shell in the directory are unaffected."
 case "$(state_get sssd_default_shell)" in
     ineffective)
         info "Skipping default_shell: an earlier run found that the directory sets a shell for $ACCOUNT (reset: remove the sssd_default_shell line from $STATE_FILE)."
         ;;
-    *)
-        info "Option 1: set default_shell in your SSSD domain. It only affects users of that domain whose directory entry has no shell; users with a shell in the directory are unaffected."
-        confirm sssd_default_shell "Set default_shell = $ZSH_PATH for your SSSD domain?"
-        case $? in
-            0) ;;
-            1)
-                warn "SSSD default_shell declined; login shell left unchanged. $(manual_fix default_shell '<your domain>')"
-                finish
-                ;;
-            *)
-                warn "$(manual_fix default_shell '<your domain>')"
-                finish
-                ;;
-        esac
-        # sssd.conf and conf.d are root-only; their section names list the domains.
-        # Reading them is also the first sudo call, so a denial stops here.
-        if ! SSSD_CONFIG="$(as_root_for "read the root-only SSSD configuration ($SSSD_CONF and $SSSD_CONF_DIR) to find which domain your account belongs to" \
-            sh -c 'cat "$1" 2>/dev/null; for f in "$2"/*.conf; do [ -f "$f" ] && cat "$f"; done; true' \
-            sh "$SSSD_CONF" "$SSSD_CONF_DIR")"; then
-            warn "sudo is unavailable or was denied; login shell left unchanged. $(manual_fix default_shell '<your domain>')"
-            finish
-        fi
-        if DOMAIN="$(find_sssd_domain "$(domain_candidates "$SSSD_CONFIG")")"; then
-            info "Your account belongs to SSSD domain $DOMAIN."
-            if apply_snippet default_shell "$DOMAIN"; then
-                finish
-            fi
-            if config_domains "$SSSD_CONFIG" | grep -qixF "$DOMAIN"; then
-                info "default_shell had no effect: the directory sets a shell for $ACCOUNT, which takes precedence."
-                state_set sssd_default_shell ineffective
-            else
-                info "default_shell had no effect for guessed domain $DOMAIN (not found in the SSSD configuration)."
-            fi
-        else
-            info "Could not determine which SSSD domain serves $ACCOUNT, so default_shell cannot be set."
-        fi
-        ;;
+    *) confirm_or_finish sssd_default_shell "Set default_shell = $ZSH_PATH for your SSSD domain?" default_shell '<your domain>' ;;
 esac
 
-info "Option 2: set override_shell, which changes the login shell for EVERY SSSD user on this machine, including users whose directory entry sets a shell."
-confirm sssd_override "Set override_shell = $ZSH_PATH for every SSSD user?"
-case $? in
-    0) ;;
-    1)
-        warn "SSSD override_shell declined; login shell left unchanged. $(manual_fix override_shell)"
-        finish
-        ;;
-    *)
-        warn "$(manual_fix override_shell)"
-        finish
-        ;;
-esac
-if [ -z "${SSSD_CONFIG+set}" ] && ! as_root_for "write the SSSD setting to $SSSD_SNIPPET (root-only directory)" true; then
-    warn "sudo is unavailable or was denied; login shell left unchanged. $(manual_fix override_shell)"
+# sssd.conf and conf.d are root-only; their section names list the domains.
+# Reading them is also the first sudo call, so a denial stops here.
+if ! SSSD_CONFIG="$(as_root_for "read the root-only SSSD configuration ($SSSD_CONF and $SSSD_CONF_DIR) to find which domain your account belongs to" \
+    sh -c 'cat "$1" 2>/dev/null; for f in "$2"/*.conf; do [ -f "$f" ] && cat "$f"; done; true' \
+    sh "$SSSD_CONF" "$SSSD_CONF_DIR")"; then
+    warn "sudo is unavailable or was denied; login shell left unchanged. $(manual_fix default_shell '<your domain>')"
     finish
 fi
+
+DOMAIN=""
+if DOMAIN="$(find_sssd_domain "$(domain_candidates "$SSSD_CONFIG")")" &&
+    ! config_domains "$SSSD_CONFIG" | grep -qixF "$DOMAIN"; then
+    # Guessed from Kerberos/realmd hints, not an SSSD section: try default_shell only.
+    info "Your account appears to belong to $DOMAIN, which is not a section in the SSSD configuration."
+    if [ "$(state_get sssd_default_shell)" != "ineffective" ] && apply_snippet default_shell "$DOMAIN"; then
+        finish
+    fi
+    DOMAIN=""
+fi
+if [ -n "$DOMAIN" ]; then
+    info "Your account belongs to SSSD domain $DOMAIN."
+    if [ "$(state_get sssd_default_shell)" != "ineffective" ]; then
+        if apply_snippet default_shell "$DOMAIN"; then
+            finish
+        fi
+        info "default_shell had no effect: the directory sets a shell for $ACCOUNT, which takes precedence over default_shell."
+        state_set sssd_default_shell ineffective
+    fi
+    # The directory sets a shell: override it, but only within this domain.
+    info "Option 2: set override_shell in domain $DOMAIN. It replaces the login shell of EVERY user in $DOMAIN on this machine, including users whose directory entry sets a shell. Users of other SSSD domains and local accounts are unaffected."
+    confirm_or_finish sssd_domain_override "Set override_shell = $ZSH_PATH for every user in $DOMAIN?" domain_override_shell "$DOMAIN"
+    if ! apply_snippet domain_override_shell "$DOMAIN"; then
+        warn "getent does not report $ZSH_PATH after setting override_shell for $DOMAIN; removed $SSSD_SNIPPET. $(manual_fix domain_override_shell "$DOMAIN")"
+    fi
+    finish
+fi
+
+# Domain unknown: the only remaining choice is the machine-wide [nss] override.
+info "Could not determine which SSSD domain serves $ACCOUNT, so no per-domain setting can be written."
+info "Option 3: set override_shell in [nss], which changes the login shell for EVERY SSSD user of EVERY domain on this machine, including users whose directory entry sets a shell."
+confirm_or_finish sssd_override "Set override_shell = $ZSH_PATH for every SSSD user?" override_shell
 if ! apply_snippet override_shell; then
     warn "getent does not report $ZSH_PATH after setting override_shell; removed $SSSD_SNIPPET. $(manual_fix override_shell)"
 fi

@@ -81,9 +81,14 @@ macOS and the package-manager zsh on Linux.
      `[domain/...]` sections of the root-only SSSD configuration, or from
      `realm list`, `klist` or `default_realm` in `/etc/krb5.conf`. Each candidate
      is confirmed with `getent passwd "$USER@<domain>"`.
-  2. Only if that has no effect (the directory sets a shell, which takes
-     precedence) or the domain cannot be found: `[nss] override_shell`, which
-     changes the shell of **every** SSSD user on the machine.
+  2. If that has no effect because the directory sets a shell (which takes
+     precedence over `default_shell`): `override_shell` in the same
+     `[domain/<name>]` section. It replaces the shell of **every** user in that
+     domain, including users whose directory entry sets one. Users of other SSSD
+     domains and local accounts are unaffected.
+  3. Only if the domain cannot be found in the SSSD configuration:
+     `[nss] override_shell`, which changes the shell of **every** SSSD user of
+     **every** domain on the machine.
 
   Before each sudo call the hook prints why it needs root (reading the SSSD
   configuration, adding the shell to `/etc/shells`, writing the snippet,
@@ -95,9 +100,10 @@ macOS and the package-manager zsh on Linux.
   with a warning only.
 
 Answers are saved in `${XDG_STATE_HOME:-~/.local/state}/chezmoi/default-shell`:
-`zsh_path=`, `sssd_default_shell=yes|no|ineffective` and `sssd_override=yes|no`.
-Later applies do not ask again, and `ineffective` skips straight to the
-`override_shell` question.
+`zsh_path=`, `sssd_default_shell=yes|no|ineffective`,
+`sssd_domain_override=yes|no` and `sssd_override=yes|no`. Later applies do not
+ask again, and `ineffective` skips straight to the per-domain `override_shell`
+question.
 A saved zsh that no longer runs is ignored. To be asked again, delete the line
 or the file. Because `run_onchange` hooks rerun only when their rendered content
 changes, also run

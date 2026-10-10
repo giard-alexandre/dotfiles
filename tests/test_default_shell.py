@@ -76,7 +76,8 @@ class DefaultShell(unittest.TestCase):
         )
         self.executable(
             "sudo",
-            'echo "$*" >> "$FIXTURE_LOG/sudo"\n'
+            # One line per call, even when an argument is a multi-line sh -c script.
+            'printf "%s\\n" "$*" | tr "\\n" " " >> "$FIXTURE_LOG/sudo"; echo >> "$FIXTURE_LOG/sudo"\n'
             'printf "%s\\n" "${SUDO_PROMPT-}" >> "$FIXTURE_LOG/sudo-prompts"\n'
             'exec "$@"\n',
         )
@@ -89,8 +90,8 @@ class DefaultShell(unittest.TestCase):
             'case "$1" in\n'
             '    is-active) exit "${FIXTURE_SSSD_STATUS:-0}" ;;\n'
             '    restart)\n'
-            # Model SSSD precedence: override_shell > directory shell > default_shell
-            # (only in the section of the user's own domain).
+            # Model SSSD precedence: override_shell > directory shell > default_shell.
+            # [nss] settings apply to every domain; [domain/X] only to domain X.
             '        domain=$(sed -n "s/^domain=//p" "$FIXTURE_DIRECTORY")\n'
             '        shell=$(sed -n "s/^directory_shell=//p" "$FIXTURE_DIRECTORY")\n'
             '        if [ -f "$FIXTURE_SNIPPET" ]; then\n'
@@ -98,6 +99,7 @@ class DefaultShell(unittest.TestCase):
             '            section=$(sed -n "s/^\\[domain\\/\\(.*\\)\\]$/\\1/p" "$FIXTURE_SNIPPET" | tr "[:upper:]" "[:lower:]")\n'
             '            default=$(sed -n "s/^default_shell = //p" "$FIXTURE_SNIPPET")\n'
             '            mine=$(printf "%s" "$domain" | tr "[:upper:]" "[:lower:]")\n'
+            '            [ -z "$section" ] || [ "$section" = "$mine" ] || override=\n'
             '            if [ -n "$override" ]; then shell=$override\n'
             '            elif [ -z "$shell" ] && [ -n "$default" ] && [ "$section" = "$mine" ]; then shell=$default; fi\n'
             '        fi\n'
@@ -263,33 +265,76 @@ class DefaultShell(unittest.TestCase):
         self.assertEqual(len(prompts), len(self.logged("sudo").splitlines()))
         self.assertTrue(all(p.startswith("[sudo] password for %u (to ") for p in prompts), prompts)
 
-    def test_sssd_default_shell_ineffective_offers_override(self):
+    def test_sssd_directory_shell_uses_domain_override(self):
         self.use_sssd(directory_shell="/bin/bash")
         result = self.apply(tty_input="y\ny\n")
         self.assertApplied(result)
         self.assertIn("default_shell had no effect: the directory sets a shell", result.stdout)
-        self.assertIn("EVERY SSSD user", result.stdout)
-        self.assertIn("Set override_shell", result.stderr)
-        self.assertEqual(self.snippet_text(), f"[nss]\noverride_shell = {self.sys_zsh}\n")
+        self.assertIn("EVERY user in CORP.EXAMPLE.COM", result.stdout)
+        self.assertIn("Users of other SSSD domains and local accounts are unaffected", result.stdout)
+        self.assertIn("for every user in CORP.EXAMPLE.COM? [y/N]", result.stderr)
+        self.assertNotIn("for every SSSD user?", result.stderr)  # [nss] never offered
+        self.assertEqual(
+            self.snippet_text(), f"[domain/CORP.EXAMPLE.COM]\noverride_shell = {self.sys_zsh}\n",
+        )
         state = self.state.read_text()
         self.assertIn("sssd_default_shell=ineffective", state)
-        self.assertIn("sssd_override=yes", state)
+        self.assertIn("sssd_domain_override=yes", state)
+        self.assertNotIn("sssd_override=", state)
 
-    def test_sssd_default_shell_ineffective_override_declined(self):
+    def test_sssd_domain_override_declined_is_remembered(self):
         self.use_sssd(directory_shell="/bin/bash")
         result = self.apply(tty_input="y\nn\n")
         self.assertApplied(result)
         self.assertIsNone(self.snippet_text())
-        self.assertIn("override_shell declined", result.stderr)
-        self.assertIn("sssd_override=no", self.state.read_text())
+        self.assertIn("Declined; login shell left unchanged", result.stderr)
+        self.assertIn("[domain/CORP.EXAMPLE.COM]\\noverride_shell", result.stderr)  # manual fix
+        self.assertIn("sssd_domain_override=no", self.state.read_text())
         # Next run skips straight past both, without prompting.
         (self.root / "state").unlink()
         result = self.apply(tty_input="y\ny\n")
         self.assertApplied(result)
         self.assertIn("Skipping default_shell: an earlier run found", result.stdout)
-        self.assertIn("saved answer for sssd_override is no", result.stdout)
+        self.assertIn("saved answer for sssd_domain_override is no", result.stdout)
         self.assertNotIn("[y/N]", result.stderr)
         self.assertIsNone(self.snippet_text())
+
+    def test_sssd_ineffective_default_goes_straight_to_domain_override(self):
+        self.use_sssd(directory_shell="/bin/bash")
+        self.state.parent.mkdir(parents=True)
+        self.state.write_text("sssd_default_shell=ineffective\n")
+        result = self.apply(tty_input="y\n")
+        self.assertApplied(result)
+        self.assertNotIn("Set default_shell", result.stderr)
+        self.assertNotIn("default_shell had no effect", result.stdout)
+        self.assertEqual(
+            self.snippet_text(), f"[domain/CORP.EXAMPLE.COM]\noverride_shell = {self.sys_zsh}\n",
+        )
+        # Writes the snippet once: no default_shell attempt before the override.
+        self.assertEqual(self.logged("systemctl").count("restart sssd"), 1)
+
+    def test_sssd_domain_override_only_affects_users_domain(self):
+        # The fake sssd ignores a [domain/X] override when the user is not in X.
+        self.use_sssd(directory_shell="/bin/bash")
+        self.directory.write_text("domain=CORP.EXAMPLE.COM\ndirectory_shell=/bin/bash\n")
+        self.snippet.write_text("[domain/OTHER.EXAMPLE.COM]\noverride_shell = /bin/zsh\n")
+        subprocess.run(
+            [str(self.bin_dir / "systemctl"), "restart", "sssd"], env=self.env, check=True,
+        )
+        self.assertTrue(self.getent.read_text().rstrip().endswith(":/bin/bash"))
+        self.snippet.unlink()
+
+    def test_sssd_guessed_domain_never_gets_domain_override(self):
+        # A Kerberos realm that is not an SSSD section: default_shell may be tried,
+        # but the per-domain override is skipped in favour of the [nss] question.
+        self.use_sssd(domains=("OTHER.EXAMPLE.COM",), directory_shell="/bin/bash")
+        (self.etc / "krb5.conf").write_text("[libdefaults]\n    default_realm = CORP.EXAMPLE.COM\n")
+        result = self.apply(tty_input="y\ny\n")
+        self.assertApplied(result)
+        self.assertIn("not a section in the SSSD configuration", result.stdout)
+        self.assertNotIn("for every user in", result.stderr)
+        self.assertEqual(self.snippet_text(), f"[nss]\noverride_shell = {self.sys_zsh}\n")
+        self.assertNotIn("sssd_default_shell=ineffective", self.state.read_text())
 
     def test_sssd_domain_detected_case_insensitively(self):
         self.use_sssd(domains=("corp.example.com",))
@@ -313,6 +358,7 @@ class DefaultShell(unittest.TestCase):
         result = self.apply(tty_input="y\ny\n")
         self.assertApplied(result)
         self.assertIn("Could not determine which SSSD domain", result.stdout)
+        self.assertIn("EVERY SSSD user of EVERY domain", result.stdout)
         self.assertEqual(self.snippet_text(), f"[nss]\noverride_shell = {self.sys_zsh}\n")
         # Unknown domain is not proof the directory sets a shell: ask again next time.
         self.assertNotIn("sssd_default_shell=ineffective", self.state.read_text())
@@ -324,6 +370,9 @@ class DefaultShell(unittest.TestCase):
         self.assertApplied(result)
         self.assertIsNone(self.snippet_text())
         self.assertIn("getent does not report", result.stderr)
+        self.assertIn("for CORP.EXAMPLE.COM; removed", result.stderr)
+        # default_shell, then the domain override: each restarts twice (apply + undo).
+        self.assertEqual(self.logged("systemctl").count("restart sssd"), 4)
 
     def test_sssd_sudo_denied_warns_once(self):
         self.use_sssd()
