@@ -16,7 +16,7 @@ USER = "tester"
 # Real utilities the hook needs; everything system-specific is faked.
 TOOLS = (
     "sed", "cut", "grep", "head", "tee", "mkdir", "mv", "rm", "dirname",
-    "realpath", "readlink", "cat", "chmod", "sh",
+    "realpath", "readlink", "cat", "chmod", "sh", "true",
 )
 
 
@@ -208,6 +208,16 @@ class DefaultShell(unittest.TestCase):
         self.assertFalse(self.snippet.exists())
         self.assertEqual(self.logged("systemctl").count("restart sssd"), 2)
         self.assertIn("getent does not report", result.stderr)
+
+    def test_sssd_sudo_denied_warns_once(self):
+        self.use_sssd()
+        self.shells.write_text(f"{self.sys_zsh}\n")
+        self.executable("sudo", 'echo "$*" >> "$FIXTURE_LOG/sudo"; exit 1\n')
+        result = self.apply(tty_input="y\n")
+        self.assertApplied(result)
+        self.assertEqual(self.logged("sudo"), "true\n")
+        self.assertIn("sudo is unavailable or was denied", result.stderr)
+        self.assertFalse(self.snippet.exists())
 
     def test_sssd_no_writes_nothing_and_is_remembered(self):
         self.use_sssd()

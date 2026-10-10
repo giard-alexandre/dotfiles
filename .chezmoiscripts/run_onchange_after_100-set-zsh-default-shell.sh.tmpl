@@ -312,8 +312,15 @@ case "$sssd_decision" in
 esac
 
 remove_snippet() {
+    [ -e "$SSSD_SNIPPET" ] || return 0
     as_root rm -f "$SSSD_SNIPPET" || warn "Could not remove $SSSD_SNIPPET; remove it manually."
 }
+
+# Ask for root once up front so a denial stops here instead of prompting per step.
+if ! as_root true; then
+    warn "sudo is unavailable or was denied; login shell left unchanged. $SSSD_MANUAL"
+    finish
+fi
 
 ensure_in_shells
 if ! { as_root mkdir -p "$SSSD_CONF_DIR" &&
