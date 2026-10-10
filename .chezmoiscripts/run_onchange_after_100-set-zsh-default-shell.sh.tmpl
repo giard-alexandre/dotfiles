@@ -43,7 +43,9 @@ DEFAULT_BREW_PREFIX={{ ternary "/usr/local" "/opt/homebrew" (eq .chezmoi.arch "a
 PASSWD_FILE="${DEFAULT_SHELL_PASSWD_FILE:-/etc/passwd}"
 NSSWITCH_FILE="${DEFAULT_SHELL_NSSWITCH_FILE:-/etc/nsswitch.conf}"
 SHELLS_FILE="${DEFAULT_SHELL_SHELLS_FILE:-/etc/shells}"
+SSSD_CONF="${DEFAULT_SHELL_SSSD_CONF:-/etc/sssd/sssd.conf}"
 SSSD_CONF_DIR="${DEFAULT_SHELL_SSSD_CONF_DIR:-/etc/sssd/conf.d}"
+KRB5_CONF="${DEFAULT_SHELL_KRB5_CONF:-/etc/krb5.conf}"
 SSSD_SNIPPET="$SSSD_CONF_DIR/50-chezmoi-shell.conf"
 STATE_FILE="${DEFAULT_SHELL_STATE_FILE:-${XDG_STATE_HOME:-$HOME/.local/state}/chezmoi/default-shell}"
 TTY_DEVICE="${DEFAULT_SHELL_TTY:-/dev/tty}"
@@ -99,6 +101,8 @@ ask() {
     [ -n "$PROMPT_FD" ] || return 1
     printf '%s' "$1" >&2
     IFS= read -r -u "$PROMPT_FD" reply || return 1
+    # Echo is off when stdin is not the terminal; keep later output on its own line.
+    [ "$PROMPT_FD" = 0 ] || printf '\n' >&2
     printf '%s\n' "$reply"
 }
 
@@ -245,13 +249,28 @@ fi
 
 info "Changing login shell for $ACCOUNT from ${CURRENT_SHELL:-unknown} to $ZSH_PATH"
 
+NEEDS_SUDO={{ ne .chezmoi.username "root" | quote }}
+SUDO_REASON=""
+
+as_root_for() {
+    # as_root_for REASON CMD...: run CMD as root, first saying why sudo is needed.
+    local reason="$1"
+    shift
+    if [ "$NEEDS_SUDO" = "true" ] && [ "$reason" != "$SUDO_REASON" ]; then
+        # stderr, so the message is shown even when output is captured.
+        printf 'Using sudo to %s.\n' "$reason" >&2
+        SUDO_REASON="$reason"
+    fi
+    SUDO_PROMPT="[sudo] password for %u (to ${reason//%/%%}): " as_root "$@"
+}
+
 ensure_in_shells() {
     if [ -f "$SHELLS_FILE" ] && grep -qxF "$ZSH_PATH" "$SHELLS_FILE"; then
         return 0
     fi
-    info "Adding $ZSH_PATH to $SHELLS_FILE"
-    if ! printf '%s\n' "$ZSH_PATH" | as_root tee -a "$SHELLS_FILE" > /dev/null; then
-        warn "Could not add $ZSH_PATH to $SHELLS_FILE (sudo unavailable or denied). Fix manually: echo '$ZSH_PATH' | sudo tee -a $SHELLS_FILE && chsh -s '$ZSH_PATH'"
+    if ! printf '%s\n' "$ZSH_PATH" |
+        as_root_for "add $ZSH_PATH to $SHELLS_FILE, the list of allowed login shells" tee -a "$SHELLS_FILE" > /dev/null; then
+        warn "Could not add $ZSH_PATH to $SHELLS_FILE (sudo unavailable or denied). Fix manually: echo '$ZSH_PATH' | sudo tee -a $SHELLS_FILE"
         finish
     fi
 }
@@ -259,6 +278,7 @@ ensure_in_shells() {
 # --- Method: chsh (local accounts and macOS) -------------------------------------------
 use_chsh() {
     ensure_in_shells
+    info "chsh may ask for your own login password (not sudo) to confirm the change."
     if chsh -s "$ZSH_PATH"; then
         info "Login shell changed to $ZSH_PATH."
     else
@@ -271,7 +291,11 @@ if [ "$OS" = "darwin" ] || cut -d: -f1 "$PASSWD_FILE" 2>/dev/null | grep -qxF "$
     use_chsh
 fi
 
-# --- Method: SSSD override_shell ---------------------------------------------------------
+# --- Method: SSSD ------------------------------------------------------------------------
+# 1. default_shell in the account's [domain/...] section: only affects users of that
+#    domain whose directory entry has no shell.
+# 2. Only if that has no effect (the directory sets a shell) or the domain is unknown:
+#    override_shell in [nss], which replaces the shell of EVERY SSSD user.
 sssd_in_use() {
     grep -E '^[[:space:]]*passwd:' "$NSSWITCH_FILE" 2>/dev/null | grep -qw sss &&
         systemctl is-active --quiet sssd 2>/dev/null
@@ -282,72 +306,193 @@ if ! sssd_in_use; then
     finish
 fi
 
-SSSD_MANUAL="Fix manually: printf '[nss]\\noverride_shell = $ZSH_PATH\\n' | sudo tee $SSSD_SNIPPET && sudo chown root:root $SSSD_SNIPPET && sudo chmod 600 $SSSD_SNIPPET && sudo sss_cache -E && sudo systemctl restart sssd"
+info "$ACCOUNT is a directory account served by SSSD, so chsh cannot change its shell."
 
-sssd_decision="$(state_get sssd_override)"
-case "$sssd_decision" in
-    no)
-        info "Skipping SSSD shell override (saved answer: no; reset: remove sssd_override from $STATE_FILE)."
-        finish
-        ;;
-    yes)
-        info "Applying SSSD shell override (saved answer: yes)."
-        ;;
-    *)
-        info "$ACCOUNT is a directory account served by SSSD, so chsh cannot change its shell."
-        info "Setting override_shell in $SSSD_SNIPPET changes the login shell for EVERY SSSD user on this machine."
-        if ! answer="$(ask "Apply the SSSD override with $ZSH_PATH? [y/N]: ")"; then
-            warn "No terminal available to confirm the SSSD override; login shell left unchanged. $SSSD_MANUAL"
-            finish
-        fi
-        case "$answer" in
-            [Yy] | [Yy][Ee][Ss]) state_set sssd_override yes ;;
-            *)
-                state_set sssd_override no
-                warn "SSSD override declined; login shell left unchanged. $SSSD_MANUAL"
-                finish
-                ;;
-        esac
-        ;;
-esac
+confirm() {
+    # confirm STATE_KEY QUESTION: saved or interactive yes/no; returns 0 for yes.
+    local saved answer
+    saved="$(state_get "$1")"
+    case "$saved" in
+        yes) info "Using saved answer for $1: yes."; return 0 ;;
+        no)
+            info "Skipping: saved answer for $1 is no (reset: remove the $1 line from $STATE_FILE)."
+            return 1
+            ;;
+    esac
+    if ! answer="$(ask "$2 [y/N]: ")"; then
+        warn "No terminal available to confirm; login shell left unchanged."
+        return 2
+    fi
+    case "$answer" in
+        [Yy] | [Yy][Ee][Ss]) state_set "$1" yes; return 0 ;;
+        *) state_set "$1" no; return 1 ;;
+    esac
+}
+
+snippet_body() {
+    # snippet_body METHOD [DOMAIN]
+    if [ "$1" = "default_shell" ]; then
+        printf '[domain/%s]\ndefault_shell = %s\n' "$2" "$ZSH_PATH"
+    else
+        printf '[nss]\noverride_shell = %s\n' "$ZSH_PATH"
+    fi
+}
+
+manual_fix() {
+    local body
+    body="$(snippet_body "$@" | sed 's/$/\\n/' | tr -d '\n')"
+    printf "Fix manually: printf '%s' | sudo tee %s && sudo chown root:root %s && sudo chmod 600 %s && sudo sss_cache -E && sudo systemctl restart sssd" \
+        "$body" "$SSSD_SNIPPET" "$SSSD_SNIPPET" "$SSSD_SNIPPET"
+}
 
 remove_snippet() {
     [ -e "$SSSD_SNIPPET" ] || return 0
-    as_root rm -f "$SSSD_SNIPPET" || warn "Could not remove $SSSD_SNIPPET; remove it manually."
+    as_root_for "remove $SSSD_SNIPPET again" rm -f "$SSSD_SNIPPET" ||
+        warn "Could not remove $SSSD_SNIPPET; remove it manually."
 }
 
-# Ask for root once up front so a denial stops here instead of prompting per step.
-if ! as_root true; then
-    warn "sudo is unavailable or was denied; login shell left unchanged. $SSSD_MANUAL"
-    finish
-fi
+restart_sssd() {
+    as_root_for "clear the SSSD cache and restart sssd so it reads the new setting" sss_cache -E ||
+        warn "sss_cache -E failed; cached entries may be stale."
+    as_root_for "clear the SSSD cache and restart sssd so it reads the new setting" systemctl restart sssd
+}
 
-ensure_in_shells
-if ! { as_root mkdir -p "$SSSD_CONF_DIR" &&
-    printf '[nss]\noverride_shell = %s\n' "$ZSH_PATH" | as_root tee "$SSSD_SNIPPET" > /dev/null &&
-    as_root chown root:root "$SSSD_SNIPPET" &&
-    as_root chmod 600 "$SSSD_SNIPPET"; }; then
-    warn "Could not write $SSSD_SNIPPET (sudo unavailable or denied)."
+account_uid() {
+    getent passwd "$1" 2>/dev/null | head -n 1 | cut -d: -f3
+}
+
+find_sssd_domain() {
+    # find_sssd_domain CANDIDATES: print the candidate domain that serves $ACCOUNT,
+    # verified through NSS by comparing the uid of ACCOUNT and ACCOUNT@DOMAIN.
+    local uid name
+    uid="$(account_uid "$ACCOUNT")"
+    [ -n "$uid" ] || return 1
+    case "$ACCOUNT" in
+        *@*)
+            # Fully qualified user names already carry the domain.
+            printf '%s\n' "${ACCOUNT#*@}"
+            return 0
+            ;;
+    esac
+    while IFS= read -r name; do
+        name="${name//[[:space:]]/}"
+        [ -n "$name" ] || continue
+        if [ "$(account_uid "$ACCOUNT@$name")" = "$uid" ]; then
+            printf '%s\n' "$name"
+            return 0
+        fi
+    done <<< "$1"
+    return 1
+}
+
+config_domains() {
+    # Domain names from the [domain/...] section headers of the SSSD configuration.
+    printf '%s\n' "$1" | sed -n 's/^[[:space:]]*\[domain\/\([^]]*\)\][[:space:]]*$/\1/p'
+}
+
+domain_candidates() {
+    # Configured domains first, then readable Kerberos/realmd hints.
+    config_domains "$1"
+    realm list --name-only 2>/dev/null
+    klist 2>/dev/null | sed -n 's/^Default principal: .*@//p'
+    sed -n 's/^[[:space:]]*default_realm[[:space:]]*=[[:space:]]*//p' "$KRB5_CONF" 2>/dev/null
+}
+
+apply_snippet() {
+    # apply_snippet METHOD [DOMAIN]: write, validate, restart, verify. 0 = shell changed.
+    local reason="write the SSSD setting to $SSSD_SNIPPET (root-only directory)"
+    ensure_in_shells
+    if ! { as_root_for "$reason" mkdir -p "$SSSD_CONF_DIR" &&
+        snippet_body "$@" | as_root_for "$reason" tee "$SSSD_SNIPPET" > /dev/null &&
+        as_root_for "$reason" chown root:root "$SSSD_SNIPPET" &&
+        as_root_for "$reason" chmod 600 "$SSSD_SNIPPET"; }; then
+        warn "Could not write $SSSD_SNIPPET (sudo unavailable or denied). $(manual_fix "$@")"
+        remove_snippet
+        finish
+    fi
+    if command -v sssctl > /dev/null 2>&1 &&
+        ! as_root_for "check the SSSD configuration with sssctl config-check" sssctl config-check > /dev/null; then
+        remove_snippet
+        warn "sssctl config-check rejected the configuration; removed $SSSD_SNIPPET. Login shell left unchanged."
+        finish
+    fi
+    if restart_sssd && [ "$(login_shell)" = "$ZSH_PATH" ]; then
+        info "Login shell is now $ZSH_PATH via $SSSD_SNIPPET ($1)."
+        return 0
+    fi
     remove_snippet
-    warn "$SSSD_MANUAL"
-    finish
+    restart_sssd || warn "Could not restart sssd; run: sudo systemctl restart sssd"
+    return 1
+}
+
+if [ "$NEEDS_SUDO" = "true" ]; then
+    info "Changing an SSSD account's shell needs sudo: SSSD's configuration is root-only and sssd must be restarted."
 fi
 
-if command -v sssctl > /dev/null 2>&1 && ! as_root sssctl config-check; then
-    remove_snippet
-    warn "sssctl config-check rejected the configuration; removed $SSSD_SNIPPET. Login shell left unchanged."
+DOMAIN=""
+case "$(state_get sssd_default_shell)" in
+    ineffective)
+        info "Skipping default_shell: an earlier run found that the directory sets a shell for $ACCOUNT (reset: remove the sssd_default_shell line from $STATE_FILE)."
+        ;;
+    *)
+        info "Option 1: set default_shell in your SSSD domain. It only affects users of that domain whose directory entry has no shell; users with a shell in the directory are unaffected."
+        confirm sssd_default_shell "Set default_shell = $ZSH_PATH for your SSSD domain?"
+        case $? in
+            0) ;;
+            1)
+                warn "SSSD default_shell declined; login shell left unchanged. $(manual_fix default_shell '<your domain>')"
+                finish
+                ;;
+            *)
+                warn "$(manual_fix default_shell '<your domain>')"
+                finish
+                ;;
+        esac
+        # sssd.conf and conf.d are root-only; their section names list the domains.
+        # Reading them is also the first sudo call, so a denial stops here.
+        if ! SSSD_CONFIG="$(as_root_for "read the root-only SSSD configuration ($SSSD_CONF and $SSSD_CONF_DIR) to find which domain your account belongs to" \
+            sh -c 'cat "$1" 2>/dev/null; for f in "$2"/*.conf; do [ -f "$f" ] && cat "$f"; done; true' \
+            sh "$SSSD_CONF" "$SSSD_CONF_DIR")"; then
+            warn "sudo is unavailable or was denied; login shell left unchanged. $(manual_fix default_shell '<your domain>')"
+            finish
+        fi
+        if DOMAIN="$(find_sssd_domain "$(domain_candidates "$SSSD_CONFIG")")"; then
+            info "Your account belongs to SSSD domain $DOMAIN."
+            if apply_snippet default_shell "$DOMAIN"; then
+                finish
+            fi
+            if config_domains "$SSSD_CONFIG" | grep -qixF "$DOMAIN"; then
+                info "default_shell had no effect: the directory sets a shell for $ACCOUNT, which takes precedence."
+                state_set sssd_default_shell ineffective
+            else
+                info "default_shell had no effect for guessed domain $DOMAIN (not found in the SSSD configuration)."
+            fi
+        else
+            info "Could not determine which SSSD domain serves $ACCOUNT, so default_shell cannot be set."
+        fi
+        ;;
+esac
+
+info "Option 2: set override_shell, which changes the login shell for EVERY SSSD user on this machine, including users whose directory entry sets a shell."
+confirm sssd_override "Set override_shell = $ZSH_PATH for every SSSD user?"
+case $? in
+    0) ;;
+    1)
+        warn "SSSD override_shell declined; login shell left unchanged. $(manual_fix override_shell)"
+        finish
+        ;;
+    *)
+        warn "$(manual_fix override_shell)"
+        finish
+        ;;
+esac
+if [ -z "${SSSD_CONFIG+set}" ] && ! as_root_for "write the SSSD setting to $SSSD_SNIPPET (root-only directory)" true; then
+    warn "sudo is unavailable or was denied; login shell left unchanged. $(manual_fix override_shell)"
     finish
 fi
-
-as_root sss_cache -E || warn "sss_cache -E failed; cached entries may be stale."
-if as_root systemctl restart sssd && [ "$(login_shell)" = "$ZSH_PATH" ]; then
-    info "Login shell is now $ZSH_PATH via $SSSD_SNIPPET."
-    finish
+if ! apply_snippet override_shell; then
+    warn "getent does not report $ZSH_PATH after setting override_shell; removed $SSSD_SNIPPET. $(manual_fix override_shell)"
 fi
-
-remove_snippet
-as_root systemctl restart sssd || warn "Could not restart sssd; run: sudo systemctl restart sssd"
-warn "getent does not report $ZSH_PATH after the SSSD override; removed $SSSD_SNIPPET. $SSSD_MANUAL"
 finish
 {{   end -}}
 {{ end -}}

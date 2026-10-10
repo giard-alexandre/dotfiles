@@ -71,17 +71,33 @@ macOS and the package-manager zsh on Linux.
 - Local accounts (in `/etc/passwd`) and macOS use `chsh -s`, after adding
   the chosen path to `/etc/shells` if it is missing.
 - SSSD accounts (`sss` in `/etc/nsswitch.conf` and `sssd` active) cannot use
-  `chsh`. After confirmation, the hook writes a root-owned, mode 600
-  `/etc/sssd/conf.d/50-chezmoi-shell.conf` with `[nss] override_shell`, then
-  runs `sss_cache -E` and restarts `sssd`. The override applies to **every**
-  SSSD user on the machine, and `/etc/sssd/sssd.conf` is never edited. The snippet
-  is removed again if `sssctl config-check` fails or `getent` does not show the
-  new shell. Without a terminal, the hook skips this step.
+  `chsh`. The hook writes a root-owned, mode 600
+  `/etc/sssd/conf.d/50-chezmoi-shell.conf`, runs `sss_cache -E`, restarts `sssd`,
+  and checks the result with `getent`. `/etc/sssd/sssd.conf` is never edited.
+  Each step asks for confirmation:
+  1. `default_shell` in your domain's `[domain/<name>]` section. It affects only
+     users of that domain whose directory entry has no shell, and outranks a
+     `default_shell` set in `sssd.conf` for that domain. The domain comes from the
+     `[domain/...]` sections of the root-only SSSD configuration, or from
+     `realm list`, `klist` or `default_realm` in `/etc/krb5.conf`. Each candidate
+     is confirmed with `getent passwd "$USER@<domain>"`.
+  2. Only if that has no effect (the directory sets a shell, which takes
+     precedence) or the domain cannot be found: `[nss] override_shell`, which
+     changes the shell of **every** SSSD user on the machine.
+
+  Before each sudo call the hook prints why it needs root (reading the SSSD
+  configuration, adding the shell to `/etc/shells`, writing the snippet,
+  restarting `sssd`), and the sudo password prompt repeats the reason. A denied
+  sudo stops with one warning. The snippet is removed again if
+  `sssctl config-check` fails or `getent` does not show the new shell. Without a
+  terminal, the hook skips SSSD changes.
 - Other directories (LDAP/nslcd, winbind, OS Login, ...) are left unchanged,
   with a warning only.
 
-Answers are saved in `${XDG_STATE_HOME:-~/.local/state}/chezmoi/default-shell`
-(`zsh_path=` and `sssd_override=yes|no`), so later applies do not ask again.
+Answers are saved in `${XDG_STATE_HOME:-~/.local/state}/chezmoi/default-shell`:
+`zsh_path=`, `sssd_default_shell=yes|no|ineffective` and `sssd_override=yes|no`.
+Later applies do not ask again, and `ineffective` skips straight to the
+`override_shell` question.
 A saved zsh that no longer runs is ignored. To be asked again, delete the line
 or the file. Because `run_onchange` hooks rerun only when their rendered content
 changes, also run
