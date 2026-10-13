@@ -20,3 +20,6 @@ minimum_release_age = "7d"
 
 [settings.npm]
 package_manager = "bun"
+
+[settings.dotnet]
+cli_telemetry_optout = true
