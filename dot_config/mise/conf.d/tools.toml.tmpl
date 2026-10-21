@@ -1,6 +1,7 @@
 [tools]
 # global tool versions go here
 # Tools
+atuin = 'latest'
 neovim = 'latest'
 bat = 'latest'
 {{ if and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64") -}}
@@ -45,4 +46,4 @@ helm = 'latest'
 tanka = 'latest'
 
 [settings]
-minimum_release_age_excludes = ["npm:@oh-my-pi/pi-coding-agent", "npm:@earendil-works/pi-coding-agent", "herdr"]
+minimum_release_age_excludes = ["npm:@oh-my-pi/pi-coding-agent", "npm:@earendil-works/pi-coding-agent", "herdr", "atuin"]

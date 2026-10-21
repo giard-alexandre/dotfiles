@@ -1,0 +1,5 @@
+# Sync is opt-in; existing chezmoi configurations default to local history.
+auto_sync = {{ get . "atuin_sync" | default false }}
+{{ if (get . "atuin_sync" | default false) -}}
+sync_address = {{ get . "atuin_sync_address" | default "https://api.atuin.sh" | quote }}
+{{ end -}}

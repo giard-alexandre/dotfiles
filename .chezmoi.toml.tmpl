@@ -3,6 +3,11 @@
 {{- $personalEmail := promptStringOnce . "personalEmail" "Your personal email address" -}}
 {{- $personalProjectFolder := promptStringOnce . "personalProjectFolder" "Personal Projects Folder (relative to home) (`c` will cd you there)" -}}
 {{- $hasWorkProfile := promptBoolOnce . "hasWorkProfile" "Does this machine have a work profile? Is this a work machine?" -}}
+{{- $atuinSync := promptBoolOnce . "atuin_sync" "Should Atuin sync shell history?" false -}}
+{{- $atuinSyncAddress := get . "atuin_sync_address" | default "https://api.atuin.sh" -}}
+{{- if $atuinSync -}}
+{{- $atuinSyncAddress = promptStringOnce . "atuin_sync_address" "Atuin sync server URL" "https://api.atuin.sh" | trim | default "https://api.atuin.sh" -}}
+{{- end -}}
 
 {{- $fontPathDict := dict "linux" ".fonts" "darwin" "$HOME/Library/Fonts" "windows" "AppData/Local/Microsoft/Windows/Fonts" -}}
 {{- $rustOsDict := dict "linux" "unknown-linux-gnu" "darwin" "apple-darwin" "windows" "pc-windows-msvc" -}}
@@ -12,6 +17,8 @@
     personal_email = {{ $personalEmail | quote }}
     personal_project_folder = {{ osClean (printf "%q" (print .chezmoi.homeDir "/" $personalProjectFolder)) }}
     has_work_profile = {{ $hasWorkProfile }}
+    atuin_sync = {{ $atuinSync }}
+    atuin_sync_address = {{ $atuinSyncAddress | quote }}
 {{ if $hasWorkProfile}}
 {{- $workEmail := promptStringOnce . "workEmail" "Work Email address" -}}
 {{- $workProjectFolder := promptStringOnce . "workProjectFolder" "Work Projects Folder (relative to home) (`cw` will cd you there)" }}
