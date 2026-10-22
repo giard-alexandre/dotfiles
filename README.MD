@@ -183,6 +183,24 @@ mise upgrade bun 'npm:@oh-my-pi/pi-coding-agent' 'npm:@earendil-works/pi-coding-
 
 ## Tool installation and prompts
 
+Atuin is installed through mise and initialized after the Zsh history plugins.
+It tracks `latest`, except on Intel Macs where it is pinned to `18.10.0`, the last
+version supported there by mise's Aqua registry. Atuin is exempt from the
+seven-day minimum release age.
+During `chezmoi init` (or `chezmoi init --source <source-directory>` for an
+existing checkout), the config template asks whether to sync history, defaulting
+to no. If enabled, it asks for the sync server URL, defaulting to
+`https://api.atuin.sh`. The answers are saved locally as `atuin_sync` and
+`atuin_sync_address`; run `chezmoi apply` after changing them. Zsh sets
+`ATUIN_CONFIG_DIR` to use the managed `~/.config/atuin/config.toml` across Atuin
+versions.
+
+The apply wrap-up prints registration, login, and first-sync commands when sync
+is enabled. Atuin handles account setup through its own prompts or browser flow;
+chezmoi does not store credentials or pass them as command arguments.
+Existing chezmoi configurations without these settings default to local history;
+edit the local chezmoi config or re-run initialization to opt in.
+
 Starship, Delta, Helix, and .NET SDKs are managed by mise on macOS and Linux.
 On Intel Macs, Delta uses mise's `cargo:git-delta` backend to build with the
 managed Rust toolchain because current upstream releases lack Intel macOS

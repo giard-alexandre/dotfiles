@@ -9,5 +9,14 @@ echo -e "Generate an ssh key for your personal profile at location: $HOME/.ssh/s
 echo -e "Generate an ssh key for your personal profile at location: $HOME/.ssh/ssh_work"
 {{- end }}
 
+{{ if (get . "atuin_sync" | default false) -}}
+printf '%s\n' \
+    'Atuin history sync is enabled. After opening a new shell, finish setup with:' \
+    '  New account:      atuin register' \
+    '  Existing account: atuin login' \
+    "Follow Atuin's prompts or browser flow to complete registration or login." \
+    'Then run: atuin sync' \
+    'Store your Atuin encryption key in your password manager so you can log in on other machines.'
+{{ end }}
 
 echo -e "\0033[0;32m>>>>> !!!Please close this terminal tab and open a new one to pick up any new configs!!! <<<<<\033[0m"

@@ -35,4 +35,9 @@ source "$DOTFILES/aliases.zsh"
 # Use Starship Prompt
 eval "$(starship init zsh)"
 
+# Initialize after mise and history plugins so Atuin owns the history key bindings.
+if command -v atuin >/dev/null 2>&1; then
+    eval "$(atuin init zsh)"
+fi
+
 unset config_files
