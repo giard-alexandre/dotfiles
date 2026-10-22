@@ -10,6 +10,9 @@ export XDG_CACHE_HOME=$HOME/.cache
 # Use the managed XDG config even on Atuin versions that default to ~/.atuin.
 export ATUIN_CONFIG_DIR="$XDG_CONFIG_HOME/atuin"
 
+# Include the system CA store in Node's trusted certificates.
+export NODE_USE_SYSTEM_CA=1
+
 # Term color fix for broadest compatibility
 export TERM=xterm-256color
 export LSCOLORS='exfxcxdxbxegedabagacad'
