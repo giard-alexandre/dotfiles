@@ -184,7 +184,9 @@ mise upgrade bun 'npm:@oh-my-pi/pi-coding-agent' 'npm:@earendil-works/pi-coding-
 ## Tool installation and prompts
 
 Atuin is installed through mise and initialized after the Zsh history plugins.
-It tracks `latest` and is exempt from the seven-day minimum release age.
+It tracks `latest`, except on Intel Macs where it is pinned to `18.10.0`, the last
+version supported there by mise's Aqua registry. Atuin is exempt from the
+seven-day minimum release age.
 During `chezmoi init` (or `chezmoi init --source <source-directory>` for an
 existing checkout), the config template asks whether to sync history, defaulting
 to no. If enabled, it asks for the sync server URL, defaulting to

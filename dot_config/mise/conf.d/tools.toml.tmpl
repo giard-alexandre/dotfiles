@@ -1,7 +1,8 @@
 [tools]
 # global tool versions go here
 # Tools
-atuin = 'latest'
+# Aqua's Atuin registry supports Intel Macs through 18.10.0; use latest elsewhere.
+atuin = '{{ if and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64") }}18.10.0{{ else }}latest{{ end }}'
 neovim = 'latest'
 bat = 'latest'
 {{ if and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64") -}}
