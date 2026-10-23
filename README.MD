@@ -241,6 +241,21 @@ if deleted even when the mise installation hook is cached. It invokes
 while chezmoi renders templates, so it need not exist before the first apply.
 The mise hook also creates `~/.claude` before initializing RTK's global integration.
 
+## Worktrunk worktree locations
+
+The managed Worktrunk config changes only `worktree-path`. Repositories under
+the configured personal code folder use `<personal>/.worktrees/<repo>/<branch>`;
+work profiles use `<work>/.worktrees/<repo>/<branch>` for their work code folder.
+For example, `~/dev/repo1` on `feature/search` gets a worktree at
+`~/dev/.worktrees/repo1/feature-search`, while `~/work/repo1` uses
+`~/work/.worktrees/repo1/feature-search` when `~/work` is the configured work folder.
+
+Nested repositories use the same code-folder root. Repositories outside both
+configured folders retain Worktrunk's default sibling layout. Branch names use
+Worktrunk's `sanitize` filter, and invoking it from an existing worktree still
+uses the primary repository's location. Hosts without a work profile need no
+work-folder setting. Verify with `python3 tests/worktrunk/test_config.py`.
+
 ## Herdr platform-specific bindings
 
 Chezmoi's `106-install-herdr-plugins` hooks invoke `herdr plugin install --yes`
