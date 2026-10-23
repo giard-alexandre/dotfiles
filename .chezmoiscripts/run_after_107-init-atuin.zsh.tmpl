@@ -1,0 +1,21 @@
+{{ if and (or (eq .chezmoi.os "linux") (eq .chezmoi.os "darwin")) (not (and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64"))) -}}
+#!/bin/zsh
+set -euo pipefail
+
+# Generate Nushell scripts after mise installs Atuin, restoring them on every apply.
+{{- $initDir := joinPath .chezmoi.homeDir ".local/share/atuin/init" }}
+{{- $mise := joinPath .chezmoi.homeDir ".local/bin/mise" }}
+init_dir={{ $initDir | quote }}
+mkdir -p "$init_dir"
+init_tmp=$(mktemp "$init_dir/init.nu.XXXXXX")
+proxy_tmp=$(mktemp "$init_dir/pty-proxy.nu.XXXXXX")
+trap 'rm -f "$init_tmp" "$proxy_tmp"' EXIT
+
+# Resolve global tools from home rather than an incidental project configuration.
+{{ $mise | quote }} --cd {{ .chezmoi.homeDir | quote }} exec -- atuin init nu > "$init_tmp"
+{{ $mise | quote }} --cd {{ .chezmoi.homeDir | quote }} exec -- atuin pty-proxy init nu > "$proxy_tmp"
+
+# Publish only after both generators succeed; failed commands retain the last good files.
+mv -f "$init_tmp" "$init_dir/init.nu"
+mv -f "$proxy_tmp" "$init_dir/pty-proxy.nu"
+{{ end -}}
