@@ -1,0 +1,15 @@
+{{- $roots := list (osClean .personal_project_folder) -}}
+{{- if and .has_work_profile (not (empty (get . "work_project_folder"))) -}}
+{{- $roots = append $roots (osClean .work_project_folder) -}}
+{{- end -}}
+{{- $layout := "" -}}
+{{- /* Prefer nested code roots over their parents. Preserve Worktrunk's Jinja expressions. */ -}}
+{{- range $index, $root := ($roots | uniq | sortAlpha | reverse) -}}
+{{- $keyword := ternary "if" "elif" (eq $index 0) -}}
+{{- $prefix := printf "%s/" (trimSuffix "/" $root) -}}
+{{- $condition := printf "repo_path == %s or repo_path is startingwith(%s)" ($root | toJson) ($prefix | toJson) -}}
+{{- $layout = printf "%s{%%- %s %s -%%}{{ %s }}/.worktrees/{{ repo }}/{{ branch | sanitize }}" $layout $keyword $condition ($root | toJson) -}}
+{{- end -}}
+{{- $layout = print $layout `{%- else -%}{{ repo_path }}/../{{ repo }}.{{ branch | sanitize }}{%- endif -%}` -}}
+# Group worktrees by repository and branch under the matching code folder.
+worktree-path = {{ $layout | quote }}

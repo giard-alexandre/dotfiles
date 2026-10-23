@@ -1,3 +1,10 @@
+{{ if and (or (eq .chezmoi.os "linux") (eq .chezmoi.os "darwin")) (not (and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64"))) -}}
+# Start the proxy before the rest of the interactive configuration and history hooks.
+const atuin_proxy_path = {{ joinPath .chezmoi.homeDir ".local/share/atuin/init/pty-proxy.nu" | quote }}
+const atuin_proxy_source = if ($atuin_proxy_path | path exists) { $atuin_proxy_path } else { null }
+source $atuin_proxy_source
+
+{{ end -}}
 $env.config.show_banner = false
 
 $env.config.history = {
@@ -45,3 +52,10 @@ alias lla = ls -la
  #$env.config.completions.external.completer = {|spans|
  #  carapace $spans.0 nushell ...$spans | from json
  #}
+
+{{ if and (or (eq .chezmoi.os "linux") (eq .chezmoi.os "darwin")) (not (and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64"))) -}}
+# Generated after installation; source null safely handles a fresh or partial apply.
+const atuin_init_path = {{ joinPath .chezmoi.homeDir ".local/share/atuin/init/init.nu" | quote }}
+const atuin_init_source = if ($atuin_init_path | path exists) { $atuin_init_path } else { null }
+source $atuin_init_source
+{{ end -}}

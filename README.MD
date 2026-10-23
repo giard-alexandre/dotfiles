@@ -195,6 +195,31 @@ to no. If enabled, it asks for the sync server URL, defaulting to
 `ATUIN_CONFIG_DIR` to use the managed `~/.config/atuin/config.toml` across Atuin
 versions.
 
+On supported versions, Atuin uses `search_mode = "daemon-fuzzy"` with its daemon
+and automatic startup. On Linux and Apple Silicon macOS, Zsh explicitly
+initializes PTY proxy at the top of
+`.zshrc`, after mise activation in `.zshenv` and before plugins. Regular history
+initialization stays after the plugins. Nu similarly sources its generated
+proxy initialization near the top of `config.nu`, before regular Atuin hooks.
+Its `env.nu` sets the managed config directory and mise shims on PATH.
+Output recording remains disabled. AI is explicitly disabled in the supported
+versions' config, and Zsh passes `--disable-ai` to omit the AI key binding.
+Native Windows gets daemon autostart but omits the unsupported PTY proxy.
+
+Intel Macs retain the `18.10.0` pin and omit these settings: that version has the
+legacy daemon but lacks `daemon-fuzzy` and `daemon.autostart` (added in `18.13.0`)
+and config-driven PTY proxy initialization (added in `18.19.0`). Enable these only after updating
+the Intel installation to a compatible release. Verify the platform/version
+guards with `python3 tests/atuin/test_config.py`.
+
+The `107-init-atuin` hook regenerates Nu's proxy and history scripts on each
+apply after tool installation. They live in `~/.local/share/atuin/init`, outside
+Nu's autoload directories, so they are sourced only once. Optional parse-time
+sourcing handles missing files on a fresh or partial apply (Nu 0.102+).
+Intel Macs omit the new shell integration: proxy support is unavailable, and
+Atuin 18.10.0's generated Nu history script uses a `job spawn -t` flag that current
+Nu rejects. Existing Zsh history integration is retained.
+
 The apply wrap-up prints registration, login, and first-sync commands when sync
 is enabled. Atuin handles account setup through its own prompts or browser flow;
 chezmoi does not store credentials or pass them as command arguments.
@@ -215,6 +240,21 @@ if deleted even when the mise installation hook is cached. It invokes
 `mise exec -- starship init nu` on both macOS and Linux. Starship is not executed
 while chezmoi renders templates, so it need not exist before the first apply.
 The mise hook also creates `~/.claude` before initializing RTK's global integration.
+
+## Worktrunk worktree locations
+
+The managed Worktrunk config changes only `worktree-path`. Repositories under
+the configured personal code folder use `<personal>/.worktrees/<repo>/<branch>`;
+work profiles use `<work>/.worktrees/<repo>/<branch>` for their work code folder.
+For example, `~/dev/repo1` on `feature/search` gets a worktree at
+`~/dev/.worktrees/repo1/feature-search`, while `~/work/repo1` uses
+`~/work/.worktrees/repo1/feature-search` when `~/work` is the configured work folder.
+
+Nested repositories use the same code-folder root. Repositories outside both
+configured folders retain Worktrunk's default sibling layout. Branch names use
+Worktrunk's `sanitize` filter, and invoking it from an existing worktree still
+uses the primary repository's location. Hosts without a work profile need no
+work-folder setting. Verify with `python3 tests/worktrunk/test_config.py`.
 
 ## Herdr platform-specific bindings
 
