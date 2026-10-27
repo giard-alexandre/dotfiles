@@ -196,29 +196,24 @@ to no. If enabled, it asks for the sync server URL, defaulting to
 versions.
 
 On supported versions, Atuin uses `search_mode = "daemon-fuzzy"` with its daemon
-and automatic startup. On Linux and Apple Silicon macOS, Zsh explicitly
-initializes PTY proxy at the top of
-`.zshrc`, after mise activation in `.zshenv` and before plugins. Regular history
-initialization stays after the plugins. Nu similarly sources its generated
-proxy initialization near the top of `config.nu`, before regular Atuin hooks.
-Its `env.nu` sets the managed config directory and mise shims on PATH.
+and automatic startup. Zsh initializes history after the plugins. On Linux and
+Apple Silicon macOS, Nu sources its generated history hooks from `config.nu`;
+its `env.nu` sets the managed config directory and mise shims on PATH.
 Output recording remains disabled. AI is explicitly disabled in the supported
 versions' config, and Zsh passes `--disable-ai` to omit the AI key binding.
-Native Windows gets daemon autostart but omits the unsupported PTY proxy.
 
 Intel Macs retain the `18.10.0` pin and omit these settings: that version has the
-legacy daemon but lacks `daemon-fuzzy` and `daemon.autostart` (added in `18.13.0`)
-and config-driven PTY proxy initialization (added in `18.19.0`). Enable these only after updating
-the Intel installation to a compatible release. Verify the platform/version
-guards with `python3 tests/atuin/test_config.py`.
+legacy daemon but lacks `daemon-fuzzy` and `daemon.autostart` (added in `18.13.0`).
+Enable these only after updating the Intel installation to a compatible release.
+Verify the platform/version guards with `python3 tests/atuin/test_config.py`.
 
-The `107-init-atuin` hook regenerates Nu's proxy and history scripts on each
-apply after tool installation. They live in `~/.local/share/atuin/init`, outside
-Nu's autoload directories, so they are sourced only once. Optional parse-time
-sourcing handles missing files on a fresh or partial apply (Nu 0.102+).
-Intel Macs omit the new shell integration: proxy support is unavailable, and
-Atuin 18.10.0's generated Nu history script uses a `job spawn -t` flag that current
-Nu rejects. Existing Zsh history integration is retained.
+The `107-init-atuin` hook regenerates Nu's history script on each apply after
+tool installation. It lives in `~/.local/share/atuin/init`, outside Nu's autoload
+directories, so it is sourced only once. Optional parse-time sourcing handles
+missing files on a fresh or partial apply (Nu 0.102+). Intel Macs omit the new
+Nushell integration: Atuin 18.10.0's generated Nu history script uses a
+`job spawn -t` flag that current Nu rejects. Existing Zsh history integration
+is retained.
 
 The apply wrap-up prints registration, login, and first-sync commands when sync
 is enabled. Atuin handles account setup through its own prompts or browser flow;

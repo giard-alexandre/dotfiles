@@ -5,7 +5,7 @@ sync_address = {{ get . "atuin_sync_address" | default "https://api.atuin.sh" | 
 {{ end -}}
 
 {{ if not (and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64")) -}}
-# Intel's Atuin 18.10.0 lacks daemon-fuzzy, daemon autostart, and PTY proxy.
+# Intel's Atuin 18.10.0 lacks daemon-fuzzy and daemon autostart.
 search_mode = "daemon-fuzzy"
 
 [daemon]
@@ -14,9 +14,4 @@ autostart = true
 
 [ai]
 enabled = false
-
-{{ if or (eq .chezmoi.os "darwin") (eq .chezmoi.os "linux") -}}
-[pty_proxy]
-enabled = true
-{{ end -}}
 {{ end -}}
