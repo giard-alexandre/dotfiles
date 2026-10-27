@@ -1,12 +1,5 @@
 #!/bin/zsh
 
-{{ if and (or (eq .chezmoi.os "linux") (eq .chezmoi.os "darwin")) (not (and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64"))) -}}
-# Mise is already active from .zshenv; start the proxy before loading plugins.
-if command -v atuin >/dev/null 2>&1; then
-    eval "$(atuin pty-proxy init zsh)"
-fi
-
-{{ end -}}
 ZSH_DISABLE_COMPFIX=true
 
 # Load Dotfile defaults
