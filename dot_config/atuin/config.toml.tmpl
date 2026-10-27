@@ -1,3 +1,5 @@
+style = "auto"
+
 # Sync is opt-in; existing chezmoi configurations default to local history.
 auto_sync = {{ get . "atuin_sync" | default false }}
 {{ if (get . "atuin_sync" | default false) -}}
