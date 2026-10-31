@@ -199,6 +199,8 @@ to no. If enabled, it asks for the sync server URL, defaulting to
 `atuin_sync_address`; run `chezmoi apply` after changing them. Zsh sets
 `ATUIN_CONFIG_DIR` to use the managed `~/.config/atuin/config.toml` across Atuin
 versions.
+Zsh passes `--disable-up-arrow` so Up recalls shell history without opening Atuin;
+Ctrl-R still opens Atuin search.
 
 On supported versions, Atuin uses `search_mode = "daemon-fuzzy"` with its daemon
 and automatic startup. Zsh initializes history after the plugins. On Linux and
