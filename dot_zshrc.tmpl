@@ -35,9 +35,9 @@ source "$DOTFILES/aliases.zsh"
 # Use Starship Prompt
 eval "$(starship init zsh)"
 
-# Initialize after mise and history plugins so Atuin owns the history key bindings.
+# Initialize after mise and history plugins; keep Up-arrow history outside Atuin.
 if command -v atuin >/dev/null 2>&1; then
-    eval "$(atuin init zsh{{ if not (and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64")) }} --disable-ai{{ end }})"
+    eval "$(atuin init zsh{{ if not (and (eq .chezmoi.os "darwin") (eq .chezmoi.arch "amd64")) }} --disable-ai{{ end }} --disable-up-arrow)"
 fi
 
 unset config_files

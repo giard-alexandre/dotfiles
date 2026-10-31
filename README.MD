@@ -166,6 +166,11 @@ inventory. The global mise setting
 `npm.package_manager = "bun"` selects Bun for all mise-managed `npm:` tools.
 It does not alias `npm` or change application projects' package managers.
 
+OMP uses `github:can1357/oh-my-pi` (command `omp`) to download the prebuilt release
+binary for the host platform, without a separate Bun runtime for the main CLI.
+It tracks `latest`; an explicit version can be set in the same mise tool entry.
+Bun remains managed for the other `npm:` tools and JavaScript execution workflows.
+
 Pi uses `npm:@earendil-works/pi-coding-agent` (command `pi`), the successor to
 the deprecated `@mariozechner/pi-coding-agent` package. Pi, OMP, and Herdr are
 exempt from the default seven-day minimum release age.
@@ -178,7 +183,7 @@ Bun-global installation or PATH entry is needed.
 mise exec -- omp --version
 mise exec -- pi --version
 # Explicitly upgrade the selected tools:
-mise upgrade bun 'npm:@oh-my-pi/pi-coding-agent' 'npm:@earendil-works/pi-coding-agent'
+mise upgrade bun 'github:can1357/oh-my-pi' 'npm:@earendil-works/pi-coding-agent'
 ```
 
 ## Tool installation and prompts
@@ -194,6 +199,8 @@ to no. If enabled, it asks for the sync server URL, defaulting to
 `atuin_sync_address`; run `chezmoi apply` after changing them. Zsh sets
 `ATUIN_CONFIG_DIR` to use the managed `~/.config/atuin/config.toml` across Atuin
 versions.
+Zsh passes `--disable-up-arrow` so Up recalls shell history without opening Atuin;
+Ctrl-R still opens Atuin search.
 
 On supported versions, Atuin uses `search_mode = "daemon-fuzzy"` with its daemon
 and automatic startup. Zsh initializes history after the plugins. On Linux and
