@@ -121,10 +121,9 @@ Run the isolated regression checks with
 # Usage
 ## Platform-specific helpers
 
-The Oh My Zsh `brew` plugin and `brew-bump`/`brew-cleanup` helpers are enabled
-only on macOS. Applying on other platforms removes any
-previously installed copies of those two helper scripts; it does not remove
-Homebrew itself.
+The Oh My Zsh `brew` plugin is enabled only on macOS. Applying removes any
+previously installed `brew-bump`/`brew-cleanup` helper scripts; it does not
+remove Homebrew itself.
 
 The `airport`/`afk` aliases, macOS defaults script, and Oh My Zsh `macos`/`iterm2`
 plugins are also enabled only on macOS. Chezmoi templates select platform-specific
