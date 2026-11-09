@@ -50,3 +50,20 @@
   Herdr workspace per worktree.
 - Close only the Herdr panes you created once they are no longer needed, and
   never close the calling pane or panes created by the user or other agents.
+
+## PR reviews
+
+When asked to review a pull request:
+
+- Before posting anything, ask the user whether to post findings to the PR
+  now or only show them locally.
+- When posting, attach each finding as an inline comment on the relevant
+  lines; reserve the review body for findings with no specific location and
+  an overall summary.
+- Submit the review as **Request changes** when any finding should block
+  merging (bugs, correctness, security, or significant design problems);
+  otherwise submit it as **Approve**.
+- On a re-review, check each of your earlier review threads against the
+  current code and resolve every thread whose issue has been addressed.
+
+@RTK.md
