@@ -3,8 +3,7 @@
 # for example, .nvmrc in the case of node's nvm
 idiomatic_version_file_enable_tools = ["python"]
 
-# configure `mise install` to always keep the downloaded archive
-always_keep_download = false        # deleted after install by default
+# configure `mise install` to keep failed installs (downloads are cached via `download_cache`)
 always_keep_install = false         # deleted on failure by default
 
 verbose = false     # set to true to see full installation output, see `MISE_VERBOSE`
